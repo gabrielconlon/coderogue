@@ -894,9 +894,11 @@ class WorldScene(Scene):
         progress = self._progress()
         self.modes.set_mode(Mode.NORMAL)
         self.locked_target = None
-        scene = AltarScene(self.game, self, altar, spec, progress)
-        if phase is not None and 0 <= phase < len(spec.phases):
-            scene.phase = phase  # start at this lectern's phase
+        single = phase is not None and 0 <= phase < len(spec.phases)
+        scene = AltarScene(
+            self.game, self, altar, spec, progress,
+            start_phase=phase if single else None, single_phase=single,
+        )
         self.game.push(scene)
 
     def active_boss(self) -> Boss | None:

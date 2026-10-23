@@ -95,10 +95,16 @@ class PlayerState:
     y: float = 0.0
     hp: int = 5
     facing: str = "down"
+    coins: int = 0
+    hearts_max: int = 3
+    u_charges: int = 3
 
     def to_dict(self) -> dict[str, Any]:
         """JSON-ready dict."""
-        return {"x": self.x, "y": self.y, "hp": self.hp, "facing": self.facing}
+        return {
+            "x": self.x, "y": self.y, "hp": self.hp, "facing": self.facing,
+            "coins": self.coins, "hearts_max": self.hearts_max, "u_charges": self.u_charges,
+        }
 
     @classmethod
     def from_dict(cls, raw: dict[str, Any] | None) -> PlayerState:
@@ -109,6 +115,9 @@ class PlayerState:
             y=float(raw.get("y", 0.0)),
             hp=int(raw.get("hp", 5)),
             facing=str(raw.get("facing", "down")),
+            coins=int(raw.get("coins", 0)),
+            hearts_max=int(raw.get("hearts_max", 3)),
+            u_charges=int(raw.get("u_charges", 3)),
         )
 
 

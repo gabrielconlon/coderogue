@@ -79,6 +79,8 @@ class AltarScene(Scene):
         spec: PuzzleSpec,
         progress: Progress,
         language: str | None = None,
+        start_phase: int | None = None,
+        single_phase: bool = False,
     ) -> None:
         super().__init__(game)
         self.world = world
@@ -86,6 +88,10 @@ class AltarScene(Scene):
         self.spec = spec
         self.progress = progress
         self.phase: int | None = 0 if spec.is_boss else None
+        if spec.is_boss and start_phase is not None:
+            self.phase = max(0, min(start_phase, len(spec.phases) - 1))
+        # One lectern per phase: close after this phase instead of moving on to the next.
+        self.single_phase = single_phase and spec.is_boss
         self.offered = spec.language_ids()
         avail = available()
         self.usable = [lid for lid in self.offered if lid in avail]
@@ -336,7 +342,17 @@ class AltarScene(Scene):
         return False
 
     def _on_pass(self, result: PuzzleResult) -> bool:
+        if self.phase is not None:
+            self.progress.flags.add(f"phase:{self.spec.id}:{self.phase}")
+            hook = getattr(self.world, "on_boss_phase_solved", None)
+            if hook is not None:
+                hook(self.spec, self.phase)
         if self.phase is not None and self.phase + 1 < len(self.spec.phases):
+            if self.single_phase:
+                self.progress.set_draft(self.spec.id, self.language, self.editor.text)
+                self.editor.last_message = f"Phase {self.phase + 1} cleared! Find the next lectern."
+                self.closing = CLOSE_DELAY_S
+                return True
             self.phase += 1
             for lid, editor in self.editors.items():
                 variant = self.variant(lid)
