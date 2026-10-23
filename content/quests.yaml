@@ -1,0 +1,21 @@
+# Quests: steps finish when their `done_when` flag is set (see coderogue/story/quests.py).
+- id: prologue
+  title: "Little Tilde"
+  steps:
+    - {text: "Talk to Pell at the copy desk.", done_when: "met:pell"}
+    - {text: "Fetch ink from the shelf.", done_when: got_ink}
+    - {text: "Bring the ink to Pell.", done_when: learned_x}
+    - {text: "Clear the typo-mites from the herb garden.", done_when: moth_joined}
+    - {text: "Heed Pell's warning.", done_when: null_came}
+    - {text: "Listen for the echo by the dark altar.", done_when: heard_quill}
+    - {text: "Light the lantern (P-01).", done_when: "solved:ch0-01"}
+    - {text: "Chant the gate verse (P-02).", done_when: "solved:ch0-02"}
+    - {text: "Mend Pell's ward (P-03).", done_when: "solved:ch0-03"}
+    - {text: "Meet the herald at the waystone.", done_when: cole_met}
+
+- id: road_to_rootholm
+  title: "The Road to Rootholm"
+  starts_when: quest_rootholm
+  steps:
+    - {text: "Set a seal at the waystone.", done_when: first_seal}
+    - {text: "Take the north road to Echo Vale.", done_when: "entered:echo_vale"}

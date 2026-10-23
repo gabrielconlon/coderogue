@@ -1,0 +1,155 @@
+# Prologue dialogue for Little Tilde. See coderogue/story/dialogue.py for the format.
+# For each npc, entries are tried top to bottom and the first eligible one plays, so
+# later beats sit above earlier ones with stricter `requires`.
+# Flags set elsewhere: solved:<puzzle id> (altars).
+
+# ---- Pell -----------------------------------------------------------------------------
+pell_nulled:
+  npc: pell
+  speaker: "None"
+  requires: [null_came]
+  lines:
+    - "None."
+    - "(A grey outline where Pell stood. It is still holding a quill.)"
+
+pell_warning:
+  npc: pell
+  speaker: Pell
+  once: true
+  requires: [moth_joined]
+  sets: [null_came]
+  lines:
+    - "Wren. The colour's going out of the hedges."
+    - "That isn't weather. Into the vault. Now."
+    - "Read it twice. Write it once. Remember that, whatever happens."
+
+pell_strike:
+  npc: pell
+  speaker: Pell
+  requires: [got_ink]
+  unless: [learned_x]
+  sets: [learned_x]
+  lines:
+    - "Ink. Good. Now the garden has typo-mites again."
+    - "A bug is a stray character in the Source. Strike it out with x."
+    - "Face it, press x. One letter, one bug. Very satisfying."
+
+pell_strike_again:
+  npc: pell
+  speaker: Pell
+  requires: [learned_x]
+  lines:
+    - "Still a mite in the herbs? Face it and press x."
+
+pell_ink_reminder:
+  npc: pell
+  speaker: Pell
+  requires: [met:pell]
+  lines:
+    - "The ink, Wren. Top shelf. j down, k up, h left, l right."
+
+pell_intro:
+  npc: pell
+  speaker: Pell
+  sets: ["met:pell"]
+  lines:
+    - "Awake? You fell asleep on the T again. It says 'Tilde' now, sort of."
+    - "Fetch me ink from the shelf. Hold h j k l to walk."
+    - "h goes left, l goes right. j hangs low like a hook. k climbs."
+  choices:
+    - text: "On it."
+    - text: "Why not the arrow keys?"
+      sets: [asked_arrows]
+
+# ---- the ink shelf (an npc object with dialogue: ink_shelf) ----------------------------
+ink_shelf_taken:
+  npc: ink_shelf
+  speaker: ""
+  requires: [got_ink]
+  lines:
+    - "An empty space where the ink was. Pell will be thrilled."
+
+ink_shelf:
+  npc: ink_shelf
+  speaker: ""
+  sets: [got_ink]
+  lines:
+    - "A shelf of ink pots. Most are labelled. One says 'ink?'."
+    - "You take the one that doesn't ask questions."
+
+# ---- Moth -----------------------------------------------------------------------------
+moth_after:
+  npc: moth
+  speaker: Moth
+  requires: [moth_joined]
+  lines:
+    - "When your spell breaks, I'll translate the error. It's my one skill."
+    - "Well, that and flying into lanterns."
+
+moth_intro:
+  npc: moth
+  speaker: Moth
+  once: true
+  requires: [learned_x]
+  sets: [moth_joined]
+  lines:
+    - "Ow. OW. Stop pressing x at me, it tickles."
+    - "I'm not a mistake. I'm misunderstood."
+    - "Every bug is just the Source trying to tell you something. Usually 'line 3'."
+    - "Take me along? I know what errors mean. I am, technically, one."
+  choices:
+    - text: "Fine. Don't eat the herbs."
+    - text: "You're a moth."
+      sets: [called_moth_a_moth]
+
+# ---- Quill's echo (from the next valley) ----------------------------------------------
+quill_echo_after:
+  npc: quill_echo
+  speaker: "Quill (echo)"
+  requires: [heard_quill]
+  lines:
+    - "i to write. Esc to stop. :w to cast. That's the whole liturgy;"
+    - "Sorry. Semicolon. Habit."
+
+quill_echo:
+  npc: quill_echo
+  speaker: "Quill (echo)"
+  requires: [null_came]
+  sets: [heard_quill]
+  lines:
+    - "Hello? Hello? ...llo? Ah, it carried. I'm Quill, altar-keeper of Echo Vale;"
+    - "Your altar is dark. Spells wake it. Walk up and look at it."
+    - "Press i to write. That's INSERT. Time stops while you write, so no rush."
+    - "Press Esc when you're done writing. When in doubt, Escape."
+    - "Then type :w and press Enter. The altar runs your spell. Out loud;"
+
+# ---- Cole -----------------------------------------------------------------------------
+cole_after:
+  npc: cole
+  speaker: Cole
+  requires: [ledger_unlocked]
+  lines:
+    - ":ahem. Seal often. The Ledger forgives; the Null does not."
+    - "Type :ledger to read your seals. And please don't :q. It hurts my feelings."
+
+cole_intro:
+  npc: cole
+  speaker: Cole
+  once: true
+  requires: ["solved:ch0-03"]
+  sets: [cole_met, help_unlocked, quit_unlocked, ledger_unlocked, quest_rootholm]
+  lines:
+    - ":ahem."
+    - "Cole, Herald of the Waystones. You mended a ward with a single x. Tidy."
+    - "Speak to the world itself with a colon. :help, if you are lost."
+    - "And :q, to quit. My finest command. Use it rarely. Ideally never."
+    - "This waystone keeps the Ledger. Touch it to set a seal: a snapshot of you."
+    - "Scribes in the capital call a seal by its real name: git commit."
+    - "Each seal remembers every spell you wrote. Break one later? Go back."
+    - "Pell's name went into the Null. Only the Terminal in Rootholm can write it back."
+    - "The road is north. :ahem. Godspeed."
+  choices:
+    - text: "Set a seal."
+      sets: [first_seal_requested]
+    - text: "What does :q do again?"
+      sets: [asked_about_q]
