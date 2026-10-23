@@ -17,6 +17,7 @@ if TYPE_CHECKING:
 
 HP_PER_HEART = 2
 HEART_SIZE = 18
+TOAST_Y = 96  # banner centre: below the HUD, above the area-name card
 MODE_COLORS: dict[str, tuple[int, int, int]] = {
     "NORMAL": theme.ACCENT,
     "INSERT": theme.GOLD,
@@ -112,3 +113,27 @@ def draw_hud(
             name = name[:-2] + "…" if len(name) > 2 else ""
         draw_text(surface, name, (x, rect.y + 30), size=14, color=theme.MUTED)
     return rect
+
+
+def draw_toast(surface: pygame.Surface, text: str, y: int | None = None) -> pygame.Rect:
+    """A centered banner (accent text on the dark HUD panel), e.g. "New stance learned: ..."."""
+    label = render_text(text, 20, theme.ACCENT, bold=True)
+    w = surface.get_width()
+    rect = pygame.Rect(0, 0, label.get_width() + 40, label.get_height() + 20)
+    rect.center = (w // 2, y if y is not None else TOAST_Y)
+    draw_panel(surface, rect, (*theme.PANEL, theme.TOAST_ALPHA), theme.TOAST_BORDER, 2)
+    surface.blit(label, label.get_rect(center=rect.center))
+    return rect
+
+
+def draw_lock_glyph(
+    surface: pygame.Surface, pos: tuple[int, int], color: tuple[int, int, int]
+) -> pygame.Rect:
+    """A small padlock (shackle over a body), 10x13 px with its top-left at ``pos``."""
+    x, y = pos
+    pygame.draw.arc(surface, color, pygame.Rect(x + 2, y, 6, 8), 0, 3.1416, 2)
+    pygame.draw.line(surface, color, (x + 2, y + 4), (x + 2, y + 6), 2)
+    pygame.draw.line(surface, color, (x + 7, y + 4), (x + 7, y + 6), 2)
+    body = pygame.Rect(x, y + 6, 10, 7)
+    surface.fill(color, body)
+    return pygame.Rect(x, y, 10, 13)

@@ -12,6 +12,12 @@ from typing import Any
 XP_PER_LEVEL = 100
 HINT_RUNGS = 3
 
+#: Flags later content added to a dialogue a saved game may already have finished:
+#: loading a save with the key flag also sets the implied ones.
+IMPLIED_FLAGS: dict[str, tuple[str, ...]] = {
+    "read_crow_letter": ("learned_dd",),  # the crow letter now teaches the Cleave too
+}
+
 
 def bilingual_flag(puzzle_id: str) -> str:
     """Flag set when ``puzzle_id`` has been solved in two or more languages."""
@@ -130,5 +136,12 @@ class Progress:
             hint_rungs=hint_rungs,
             drafts=drafts,
             xp=int(data.get("xp", 0)),
-            flags=set(map(str, data.get("flags") or ())),
+            flags=_with_implied(set(map(str, data.get("flags") or ()))),
         )
+
+
+def _with_implied(flags: set[str]) -> set[str]:
+    for flag, implied in IMPLIED_FLAGS.items():
+        if flag in flags:
+            flags.update(implied)
+    return flags

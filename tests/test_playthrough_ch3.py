@@ -38,6 +38,11 @@ PRIOR_CHAPTERS = (0, 1, 2)
 ENTERED = (
     "entered:little_tilde", "entered:echo_vale", "entered:branchwood", "entered:looping_mire",
 )
+# stances a Chapter 2 save has learned (Pip, Sable, Tally's crow letter, Ono)
+LEARNED = (
+    "met_pip", "learned_w", "learned_b", "learned_e", "met_sable", "got_spyglass", "learned_v",
+    "read_crow_letter", "learned_counts", "learned_dd", "got_hourglass", "learned_u",
+)
 
 
 # ---- shared session -----------------------------------------------------------------------
@@ -65,7 +70,7 @@ def s(tmp_path_factory):
         mp.setenv("CODEROGUE_HOME", str(home))
         game = Game(headless=True)
         world = start_world(game, START_MAP, new=True)
-        seed_progress(game, PRIOR_CHAPTERS, ENTERED)
+        seed_progress(game, PRIOR_CHAPTERS, ENTERED + LEARNED)
         world.load_map(world.map_path)  # rebuild doors/altars against the seeded save
         game.push(world)
         sess = Session()

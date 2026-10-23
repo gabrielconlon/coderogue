@@ -18,3 +18,5 @@ HEART_EMPTY: Color = (60, 40, 52)
 GOLD: Color = (240, 200, 110)
 DIFF_HIGHLIGHT: Color = (70, 38, 34)  # background of the first differing diff row
 SCRIM_ALPHA = 150  # how strongly a modal darkens the frozen world behind it
+TOAST_BORDER: Color = ACCENT  # "New stance learned" banner
+TOAST_ALPHA = 230

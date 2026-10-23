@@ -397,8 +397,11 @@ def test_vale_walk_pip_namestone_and_toll(s):
     game, world = s.game, s.world
     _, dy = walk(game, world, "k", 0.25)
     assert dy < -15
+    assert world.unlocked.isdisjoint({"dash", "counts", "visual", "cleave", "rewind"})
     assert talk(game, world, "pip") == "pip_intro"
     assert {"met_pip", "learned_w", "learned_b", "learned_e"} <= flags(game)
+    assert "dash" in world.unlocked  # Pip teaches the Runner's Stride
+    assert world.toast == "New stance learned: w / b / e  dash"
     solve(game, world, "namestone")
     toll = by_name(world.doors, "toll_gate")
     assert toll.locked
@@ -423,6 +426,7 @@ def test_save_and_restore_midway(s):
     assert restored.player.center == pytest.approx(world.player.center)
     assert "entered:echo_vale" in other.progress.flags
     assert restored.player.coins == world.player.coins
+    assert restored.unlocked == world.unlocked and restored.toast is None
 
 
 def test_toll_gate_orchard_and_ferry(s):

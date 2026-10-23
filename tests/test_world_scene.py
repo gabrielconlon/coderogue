@@ -56,6 +56,7 @@ def test_world_spawns_and_moves(game):
 
 
 def test_count_prefix_dashes(game):
+    game.dev_all_unlocked = True  # counts are taught by Tally's letter in Chapter 2
     ws = WorldScene(game, TEST_ROOM)
     game.push(ws)
     y0 = ws.player.y
@@ -70,6 +71,7 @@ def test_count_prefix_dashes(game):
 
 
 def test_count_attack_and_command_quit(game):
+    game.dev_all_unlocked = True  # counts are taught by Tally's letter in Chapter 2
     ws = WorldScene(game, TEST_ROOM)
     game.push(ws)
     ws.handle_event(key(pygame.K_3, "3"))

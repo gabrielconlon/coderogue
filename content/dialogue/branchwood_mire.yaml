@@ -1,6 +1,6 @@
 # Chapter 2: Branchwood & the Looping Mire. Map sets entered:branchwood, entered:looping_mire.
-# Story flags set here: met_sable, got_spyglass, read_crow_letter, got_hourglass, ledger_disaster,
-# ledger_restored, pell_word2.
+# Story flags set here: met_sable, got_spyglass, learned_v, read_crow_letter, learned_counts,
+# learned_dd, got_hourglass, learned_u, ledger_disaster, ledger_restored, pell_word2.
 
 # ---- Sable, ranger of Branchwood ----------------------------------------------------------
 sable_after_boss:
@@ -62,11 +62,12 @@ crow_letter_after:
 crow_letter:
   npc: crow_letter
   speaker: "Letter from Tally"
-  sets: [read_crow_letter, learned_counts]
+  sets: [read_crow_letter, learned_counts, learned_dd]
   lines:
     - "Dear Wren. One crow, two feathers, three paragraphs. Here we go."
     - "A number before a key repeats it. `3j` dashes three tiles down. `3x` is a triple strike."
-    - "It works in the editor too: `3j` moves three lines, `2dd` deletes two. Count first, THEN act."
+    - "Loopers coil in rows down here and all the way into the Mire. Press `dd` and your swing cleaves the whole row you face. The Cleave."
+    - "It works in the editor too: `3j` moves three lines, `dd` deletes a line, `2dd` deletes two. Count first, THEN act."
     - "Yours, Tally. P.S. The crow has been paid. Four coins. I counted."
 
 # ---- Travelers of the Mire --------------------------------------------------------------

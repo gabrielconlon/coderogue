@@ -32,6 +32,8 @@ TILE = 16
 START_MAP = resource_path("content", "maps", "crossroads.tmj")
 PRIOR_CHAPTERS = (0, 1)
 ENTERED = ("entered:little_tilde", "entered:echo_vale")
+# stances a Chapter 1 save has learned (Pip at the word-stones)
+LEARNED = ("met_pip", "learned_w", "learned_b", "learned_e")
 
 
 # ---- shared session -----------------------------------------------------------------------
@@ -59,7 +61,7 @@ def s(tmp_path_factory):
         mp.setenv("CODEROGUE_HOME", str(home))
         game = Game(headless=True)
         world = start_world(game, START_MAP, new=True)
-        seed_progress(game, PRIOR_CHAPTERS, ENTERED)
+        seed_progress(game, PRIOR_CHAPTERS, ENTERED + LEARNED)
         world.load_map(world.map_path)  # rebuild doors/altars against the seeded save
         game.push(world)
         sess = Session()
@@ -608,6 +610,7 @@ def test_pell_second_words_and_the_road_north(s):
 # ---- design gaps ----------------------------------------------------------------------------
 def test_v_locks_on_to_the_glowing_segment(tmp_path, monkeypatch):
     monkeypatch.setenv("CODEROGUE_HOME", str(tmp_path))
+    monkeypatch.setenv("CODEROGUE_ALL_UNLOCKED", "1")  # a fresh game straight into the boss
     game = Game(headless=True)
     world = WorldScene(game, resource_path("content", "maps", "mire_heart.tmj"))
     game.push(world)

@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import dataclasses
 import math
+import os
 from collections.abc import Callable
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -32,7 +33,8 @@ from coderogue.save.store import PlayerState, SaveReceipt, SaveState
 from coderogue.scene import Scene
 from coderogue.story.dialogue import Dialogue, DialogueBank
 from coderogue.story.scene import DialogueScene
-from coderogue.ui.hud import draw_hud
+from coderogue.ui import theme
+from coderogue.ui.hud import draw_hud, draw_lock_glyph, draw_toast
 from coderogue.ui.text import draw_text, render_text
 from coderogue.world.camera import Camera
 from coderogue.world.collision import boxes_overlap
@@ -75,8 +77,45 @@ SEARCH_FOCUS_TIME = 1.2  # n pans the camera to the match for this long
 VISUAL_COLOR = (150, 140, 240)
 SEARCH_COLOR = (240, 200, 110)
 
-#: Mechanics content can gate by removing them from ``world.unlocked`` (MVP: all on).
-ALL_MECHANICS = frozenset({"visual", "cleave", "rewind", "yank", "search", "marks"})
+#: Each gated mechanic and the story flag (set by its teaching dialogue) that unlocks it.
+#: ``world.unlocked`` is derived from these flags; see :meth:`WorldScene.refresh_unlocks`.
+UNLOCK_FLAGS: dict[str, str] = {
+    "dash": "learned_w",  # Pip, Echo Vale
+    "counts": "learned_counts",  # Tally's crow letter, Branchwood
+    "visual": "learned_v",  # Sable, Branchwood
+    "cleave": "learned_dd",  # Tally's crow letter, Branchwood (the Loopers' row)
+    "rewind": "got_hourglass",  # Ono, the Looping Mire
+    "yank": "learned_yank",  # Dex, the Grand Directory
+    "search": "learned_search",  # Dex, the Grand Directory
+    "marks": "learned_marks",  # Cole, the Grand Directory
+}
+ALL_MECHANICS = frozenset(UNLOCK_FLAGS)
+#: Never locked: walking, ``x``, ``i``, ``Esc`` and the ``:`` command line.
+BASE_MECHANICS = frozenset({"move", "strike", "interact", "escape", "command"})
+#: The in-world flash when a locked mechanic's key is pressed.
+LOCKED_LINES: dict[str, str] = {
+    "dash": "Your feet don't know the Runner's Stride yet.",
+    "counts": "Count before you act, says Tally. You haven't met Tally's letter yet.",
+    "visual": "You have not found the Spyglass yet.",
+    "cleave": "The Cleave is a lesson of the Branchwood road.",
+    "rewind": "You have no hourglass.",
+    "yank": "Dex has not shown you the yank.",
+    "search": "The Directory's search is still unknown to you.",
+    "marks": "Cole has not taught you marks.",
+}
+#: Keys and name shown on the "New stance learned" toast.
+UNLOCK_TOASTS: dict[str, str] = {
+    "dash": "w / b / e  dash",
+    "counts": "3j / 3x  counts",
+    "visual": "v  lock on",
+    "cleave": "dd  cleave",
+    "rewind": "u  rewind",
+    "yank": "yy / p  yank and put",
+    "search": "/ and n  search",
+    "marks": "m / '  marks",
+}
+TOAST_TIME = 3.0
+ALL_UNLOCKED_ENV = "CODEROGUE_ALL_UNLOCKED"
 
 FACING_NAMES = {(0, 1): "down", (0, -1): "up", (-1, 0): "left", (1, 0): "right"}
 NAMED_FACINGS = {v: k for k, v in FACING_NAMES.items()}
@@ -174,7 +213,10 @@ class WorldScene(Scene):
         self.last_waystone: tuple[str, str] | None = None
         self.marks: dict[str, tuple[str, str]] = {}
         self.visited_waystones: set[tuple[str, str]] = set()
-        self.unlocked: set[str] = set(ALL_MECHANICS)
+        self.unlocked: set[str] = set(BASE_MECHANICS)
+        self.toast: str | None = None  # "New stance learned" banner text
+        self.toast_time = 0.0
+        self.toast_queue: list[str] = []
         # VIM mechanics state
         self.locked_target: Enemy | None = None
         self.search_input: str | None = None  # text being typed after "/"
@@ -190,6 +232,7 @@ class WorldScene(Scene):
         self.crates: dict[str, dict[str, list[int]]] = {}
         # map-triggered dialogue (boss intro/defeat), pushed once the world is on top
         self.queued_dialogue: list[Dialogue] = []
+        self.refresh_unlocks(announce=False)
         self.load_map(map_path, spawn)
 
     # ---- maps -------------------------------------------------------------------------
@@ -249,6 +292,7 @@ class WorldScene(Scene):
         enter_flag = props.get("enter_flag")
         if enter_flag:
             self._progress().flags.add(str(enter_flag))
+        self.refresh_unlocks()
         self.dismiss_golems()
         self.queued_dialogue.clear()
         intro = props.get("intro_dialogue")
@@ -380,6 +424,59 @@ class WorldScene(Scene):
             self.game.progress = progress
         return progress
 
+    # ---- unlocks ----------------------------------------------------------------------
+    def all_unlocked(self) -> bool:
+        """Dev escape: ``game.dev_all_unlocked`` or ``CODEROGUE_ALL_UNLOCKED=1``."""
+        if getattr(self.game, "dev_all_unlocked", False) is True:
+            return True
+        return os.environ.get(ALL_UNLOCKED_ENV, "") == "1"
+
+    def compute_unlocked(self) -> set[str]:
+        """The base mechanics plus every mechanic whose :data:`UNLOCK_FLAGS` flag is set."""
+        if self.all_unlocked():
+            return set(BASE_MECHANICS | ALL_MECHANICS)
+        flags = self._progress().flags
+        return set(BASE_MECHANICS) | {m for m, flag in UNLOCK_FLAGS.items() if flag in flags}
+
+    def refresh_unlocks(self, announce: bool = True) -> list[str]:
+        """Re-derive :attr:`unlocked` from the progress flags; returns the newly unlocked
+        mechanics (in teaching order) and, if ``announce``, queues a toast for each."""
+        new = self.compute_unlocked()
+        gained = [m for m in UNLOCK_FLAGS if m in new and m not in self.unlocked]
+        self.unlocked = new
+        if announce:
+            for mechanic in gained:
+                self.show_toast(f"New stance learned: {UNLOCK_TOASTS[mechanic]}")
+        return gained
+
+    def show_toast(self, text: str) -> None:
+        """Queue a centered banner; banners show one at a time for ``TOAST_TIME`` s."""
+        if self.toast is None:
+            self.toast, self.toast_time = text, TOAST_TIME
+        else:
+            self.toast_queue.append(text)
+
+    def _update_toast(self, dt: float) -> None:
+        if self.toast is None:
+            return
+        self.toast_time -= dt
+        if self.toast_time <= 0:
+            if self.toast_queue:
+                self.toast, self.toast_time = self.toast_queue.pop(0), TOAST_TIME
+            else:
+                self.toast, self.toast_time = None, 0.0
+
+    def locked(self, mechanic: str) -> bool:
+        """True (after flashing the in-world line) when ``mechanic`` is not yet learned."""
+        if mechanic in self.unlocked:
+            return False
+        self.flash(LOCKED_LINES.get(mechanic, "You have not learned that yet."))
+        return True
+
+    def on_resume(self) -> None:
+        """Back on top (a dialogue, altar or menu closed): pick up any new unlocks."""
+        self.refresh_unlocks()
+
     def _is_solved(self, ref: str) -> bool:
         progress = self._progress()
         if progress.is_solved(ref):
@@ -428,6 +525,11 @@ class WorldScene(Scene):
         if self.pending_key is not None:
             self._pending_letter(unicode)
             return
+        if (
+            len(unicode) == 1 and unicode in "123456789" and not self.modes.pending_count
+            and self.modes.mode in (Mode.NORMAL, Mode.VISUAL) and self.locked("counts")
+        ):
+            return
         if unicode and self.modes.feed_digit(unicode):
             return
         action = self.keymap.action_for_key(event.key, unicode)
@@ -473,6 +575,8 @@ class WorldScene(Scene):
         elif action in (Action.DASH_FWD, Action.DASH_BACK):
             tiles = self.modes.pending_count
             self.modes.clear_count()
+            if self.locked("dash"):
+                return
             player.dash(forward=action is Action.DASH_FWD, tiles=tiles)
         elif action is Action.INTERACT:
             self.modes.clear_count()
@@ -504,13 +608,12 @@ class WorldScene(Scene):
             self.start_search()
         elif action is Action.SEARCH_NEXT:
             self.modes.clear_count()
-            self.search_next()
+            if not self.locked("search"):
+                self.search_next()
         elif action in (Action.MARK, Action.JUMP_MARK):
             self.modes.clear_count()
-            if "marks" in self.unlocked:
+            if not self.locked("marks"):
                 self.pending_key = "m" if action is Action.MARK else "'"
-            else:
-                self.flash("You have not learned marks yet.")
         elif action is Action.DEBUG:
             self.show_debug = not self.show_debug
         elif action is Action.HELP:
@@ -612,8 +715,7 @@ class WorldScene(Scene):
         if self.modes.mode is Mode.VISUAL:
             self.exit_visual()
             return
-        if "visual" not in self.unlocked:
-            self.flash("You have not found the Spyglass yet.")
+        if self.locked("visual"):
             return
         target = self.nearest_enemy(LOCK_RANGE)
         if target is None:
@@ -693,8 +795,7 @@ class WorldScene(Scene):
 
     def cleave(self) -> bool:
         """``dd``: hit every bug in the hero's row/column (8 tiles each side)."""
-        if "cleave" not in self.unlocked:
-            self.flash("You have not learned the Cleave yet.")
+        if self.locked("cleave"):
             return False
         box = self.player.cleave()
         if box is None:
@@ -704,8 +805,7 @@ class WorldScene(Scene):
 
     def rewind(self) -> bool:
         """``u``: rewind 3 s of movement (one hourglass charge)."""
-        if "rewind" not in self.unlocked:
-            self.flash("You have not found Ono's Hourglass yet.")
+        if self.locked("rewind"):
             return False
         if self.player.rewind():
             return True
@@ -752,8 +852,7 @@ class WorldScene(Scene):
 
     def lift(self) -> bool:
         """``yy``: pick up the adjacent liftable and carry it overhead."""
-        if "yank" not in self.unlocked:
-            self.flash("You have not learned yank yet.")
+        if self.locked("yank"):
             return False
         if self.player.carrying is not None:
             self.flash("Your hands are full. p puts it down.")
@@ -798,8 +897,7 @@ class WorldScene(Scene):
     # ---- search -----------------------------------------------------------------------
     def start_search(self) -> None:
         """``/``: open the search prompt."""
-        if "search" not in self.unlocked:
-            self.flash("You have not learned search yet.")
+        if self.locked("search"):
             return
         self.held.clear()
         self.search_input = ""
@@ -1224,9 +1322,8 @@ class WorldScene(Scene):
             }
             for ws in self.waystones:
                 ws.visited = (self.map_key, ws.name) in self.visited_waystones
-        unlocked = extras.get("unlocked")
-        if isinstance(unlocked, list):
-            self.unlocked = {str(u) for u in unlocked}
+        # ``unlocked`` is saved for reference only: it is re-derived from the progress flags.
+        self.refresh_unlocks(announce=False)
         crates = extras.get("crates")
         if isinstance(crates, dict):
             self.crates = {
@@ -1259,6 +1356,7 @@ class WorldScene(Scene):
     def restore_state(self, state: SaveState) -> None:
         """Apply a loaded save: map, position, hp and world extras (Progress is the
         caller's job: ``game.progress = Progress.from_dict(state.progress)``)."""
+        self.refresh_unlocks(announce=False)  # a restored save does not re-announce stances
         if state.map:
             path = resolve_map(state.map)
             if path.exists():
@@ -1276,6 +1374,7 @@ class WorldScene(Scene):
         self.player.trail.clear()
         self.camera.follow(*self.player.center)
         self._solid_sig = None
+        self.refresh_unlocks(announce=False)
         self._update_world_state()
         self._sync_altars()
 
@@ -1369,10 +1468,30 @@ class WorldScene(Scene):
             pygame.draw.line(view, MARKER_COLOR, (cx, top + 3), (cx, top + 6))
             view.set_at((cx, top + 1), MARKER_COLOR)
 
+    #: Rows of the ``?`` overlay: (keys, what it does, gating mechanic or None).
+    HELP_ROWS: tuple[tuple[str, str, str | None], ...] = (
+        ("h j k l", "walk (hold)", None),
+        ("x", "strike a bug", None),
+        ("i  or  Enter", "talk, read, use an altar, open a chest", None),
+        ("w / b / e", "dash forward / back / short hop", "dash"),
+        ("3j  3x", "count first: dash 3 tiles, strike 3 times", "counts"),
+        ("v", "VISUAL: lock on to a bug, h j k l to cycle", "visual"),
+        ("dd", "cleave the whole row you face", "cleave"),
+        ("u", "rewind 3 s (3 charges, refilled at waystones)", "rewind"),
+        ("yy / p", "lift a crate / put it down", "yank"),
+        ("/word  then  n", "search for things by name, next match", "search"),
+        ("ma  /  'a", "set a mark at a waystone / jump back to it", "marks"),
+        (":save  :ledger", "seal a save in git / read the Ledger", None),
+        ("Esc", "when in doubt, Escape", None),
+    )
+
     def _draw_help(self, surface: pygame.Surface) -> None:
-        """The controls overlay toggled with ``?`` or F1."""
+        """The controls overlay toggled with ``?`` or F1. Mechanics not yet learned are
+        dimmed, with a padlock and "(not yet learned)"."""
         w, h = surface.get_size()
-        panel = pygame.Rect(w // 2 - 360, h // 2 - 190, 720, 380)
+        rows = self.HELP_ROWS
+        panel_h = 60 + 26 * len(rows)
+        panel = pygame.Rect(w // 2 - 450, h // 2 - panel_h // 2, 900, panel_h)
         shade = pygame.Surface((w, h), pygame.SRCALPHA)
         shade.fill((0, 0, 0, 150))
         surface.blit(shade, (0, 0))
@@ -1382,24 +1501,16 @@ class WorldScene(Scene):
             surface, "The Four Stances   (press ? or Esc to close)",
             (panel.x + 18, panel.y + 12), size=18, color=MARKER_COLOR,
         )
-        lines = [
-            ("h j k l", "walk (hold)"),
-            ("x", "strike a bug  (3x strikes three times)"),
-            ("w / b / e", "dash forward / back / short hop"),
-            ("i  or  Enter", "talk, read, use an altar, open a chest"),
-            ("v", "VISUAL: lock on to a bug, h j k l to cycle"),
-            ("dd", "cleave the whole row you face"),
-            ("u", "rewind 3 seconds (3 charges, refilled at waystones)"),
-            ("yy / p", "lift a crate / put it down"),
-            ("/word  then  n", "search for things by name, next match"),
-            ("ma  /  'a", "set a mark at a waystone / jump back to it"),
-            (":save  :ledger", "seal a save in git / read the Ledger"),
-            ("Esc", "when in doubt, Escape"),
-        ]
         y = panel.y + 48
-        for key, what in lines:
-            draw_text(surface, key, (panel.x + 24, y), size=16, color=(230, 225, 210))
-            draw_text(surface, what, (panel.x + 210, y), size=16, color=(170, 165, 155))
+        for key, what, mechanic in rows:
+            locked = mechanic is not None and mechanic not in self.unlocked
+            key_color = theme.DIM if locked else (230, 225, 210)
+            what_color = theme.DIM if locked else (170, 165, 155)
+            if locked:
+                draw_lock_glyph(surface, (panel.x + 8, y + 3), theme.DIM)
+                what = f"{what}  (not yet learned)"
+            draw_text(surface, key, (panel.x + 24, y), size=16, color=key_color)
+            draw_text(surface, what, (panel.x + 210, y), size=16, color=what_color)
             y += 26
 
     # ---- simulation -------------------------------------------------------------------
@@ -1408,6 +1519,8 @@ class WorldScene(Scene):
         self.time += dt
         if self.message_time > 0:
             self.message_time -= dt
+        self.refresh_unlocks()
+        self._update_toast(dt)
         self.area_card.update(dt)
         if self.fade.active:
             self.fade.update(dt)
@@ -1532,6 +1645,8 @@ class WorldScene(Scene):
             showcmd = render_text(pending, 16)
             draw_text(surface, pending, (w - showcmd.get_width() - 12, h - 24), size=16)
         self.area_card.draw(surface)
+        if self.toast:
+            draw_toast(surface, self.toast)
         if self._show_controls_hint():
             hint = "h j k l  walk     x  strike     i / Enter  talk & use     ?  help"
             hw = render_text(hint, 14).get_width()

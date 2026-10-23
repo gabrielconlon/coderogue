@@ -21,6 +21,7 @@ DT = 1 / 60
 @pytest.fixture
 def game(tmp_path, monkeypatch):
     monkeypatch.setenv("CODEROGUE_HOME", str(tmp_path))
+    monkeypatch.setenv("CODEROGUE_ALL_UNLOCKED", "1")  # these tests exercise every stance
     g = Game(headless=True)
     yield g
     pygame.quit()
