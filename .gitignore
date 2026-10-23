@@ -1,0 +1,12 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+build/
+dist/
+*.egg-info/
+*.spec
+# Kenney packs are fetched by tools/fetch_assets.py, never committed
+assets/kenney/
+.DS_Store
