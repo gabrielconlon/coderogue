@@ -1,0 +1,55 @@
+id: ch0-01
+title: The Lantern's First Word
+chapter: 0
+order: 1
+optional: false
+concepts: [output, string-literals]
+vim_skill: "i to write, Esc to stop, :w to cast"
+lore: |
+  The village lantern has gone dark and grey. Quill's voice drifts in on an
+  echo from the next valley: "A lantern wakes when it hears its first word.
+  Press i to write, Esc when you are done, then :w to cast the spell."
+  The lantern is waiting to hear: Hello, Tilde.
+limits: {timeout_s: 2, max_stdout_kb: 16}
+languages:
+  python:
+    starter: |
+      # The lantern listens for one line of words.
+      # Replace the ___ with: Hello, Tilde.
+      print("___")
+    hints:
+      - &lantern_h1 "The lantern wants to hear exactly two words: Hello, Tilde. The spell already knows how to speak. It just needs the right words inside the quotes."
+      - "print(\"...\") speaks whatever sits between the quotes. Put the words in place of the ___ and keep both quotes."
+      - "print(\"Hello, ___.\")   The comma, the space and the full stop all count."
+    solution: |
+      print("Hello, Tilde.")
+  bash:
+    starter: |
+      # The lantern listens for one line of words.
+      # Replace the ___ with: Hello, Tilde.
+      echo "___"
+    hints:
+      - *lantern_h1
+      - "echo \"...\" speaks whatever sits between the quotes. Put the words in place of the ___ and keep both quotes."
+      - "echo \"Hello, ___.\"   The comma, the space and the full stop all count."
+    solution: |
+      echo "Hello, Tilde."
+  powershell:
+    starter: |
+      # The lantern listens for one line of words.
+      # Replace the ___ with: Hello, Tilde.
+      Write-Output "___"
+    hints:
+      - *lantern_h1
+      - "Write-Output \"...\" speaks whatever sits between the quotes. Put the words in place of the ___ and keep both quotes."
+      - "Write-Output \"Hello, ___.\"   The comma, the space and the full stop all count."
+    solution: |
+      Write-Output "Hello, Tilde."
+tests:
+  - name: "The lantern hears its first word"
+    expect: {stdout: "Hello, Tilde.\n", exit_code: 0}
+reward:
+  xp: 10
+  items: []
+  unlocks: ["vim:i", "vim:Esc", "cmd:w"]
+  world_effect: "The lantern flares gold and the grey tide pulls back from the square."

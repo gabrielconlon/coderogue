@@ -1,0 +1,69 @@
+id: ch0-03
+title: Mend Pell's Ward
+chapter: 0
+order: 3
+optional: false
+concepts: [reading-errors, debugging, typos]
+vim_skill: "x (strike out a character)"
+lore: |
+  Pell's ward-spell lies on the altar, smudged by the Null. Two typos keep
+  it from working. Cast it as it is and read what the Terminal says: the
+  error tells you which line is wrong. Put the cursor on a bad letter and
+  strike it out with x, just like striking a Typo-mite.
+limits: {timeout_s: 2, max_stdout_kb: 16}
+languages:
+  python:
+    starter: |
+      # Pell's ward-spell. Two typos are hiding in it.
+      print("By quill and lantern,")
+      prnt("the Null is pushed back.")
+      print("Little Tilde stands!)
+    hints:
+      - &ward_h1 "Cast the spell first and read the error. It names a line. Fix that line, cast again, and the next error points at the next problem."
+      - "One line calls something that is not quite print. Another line opens a quote but never closes it: every \" needs a partner."
+      - "Line 3 should start with print( and line 4 needs a closing quote before the bracket: ...stands!\")"
+    solution: |
+      # Pell's ward-spell. Two typos are hiding in it.
+      print("By quill and lantern,")
+      print("the Null is pushed back.")
+      print("Little Tilde stands!")
+  bash:
+    starter: |
+      # Pell's ward-spell. Two typos are hiding in it.
+      echo "By quill and lantern,"
+      ehco "the Null is pushed back."
+      echo "Little Tilde stands!
+    hints:
+      - *ward_h1
+      - "One line calls a command that is not quite echo. Another line opens a quote but never closes it: every \" needs a partner."
+      - "Line 3 should start with echo, and line 4 needs a closing quote at the end: ...stands!\""
+    solution: |
+      # Pell's ward-spell. Two typos are hiding in it.
+      echo "By quill and lantern,"
+      echo "the Null is pushed back."
+      echo "Little Tilde stands!"
+  powershell:
+    starter: |
+      # Pell's ward-spell. Two typos are hiding in it.
+      Write-Output "By quill and lantern,"
+      Wirte-Output "the Null is pushed back."
+      Write-Output "Little Tilde stands!
+    hints:
+      - *ward_h1
+      - "One line calls a command that is not quite Write-Output. Another line opens a quote but never closes it: every \" needs a partner."
+      - "Line 3 should start with Write-Output, and line 4 needs a closing quote at the end: ...stands!\""
+    solution: |
+      # Pell's ward-spell. Two typos are hiding in it.
+      Write-Output "By quill and lantern,"
+      Write-Output "the Null is pushed back."
+      Write-Output "Little Tilde stands!"
+tests:
+  - name: "The whole ward, cast cleanly"
+    expect:
+      stdout: "By quill and lantern,\nthe Null is pushed back.\nLittle Tilde stands!\n"
+      exit_code: 0
+reward:
+  xp: 20
+  items: [pell_ward]
+  unlocks: ["vim:x-editor"]
+  world_effect: "The ward rings out from the altar and pushes the Null out of the village square."

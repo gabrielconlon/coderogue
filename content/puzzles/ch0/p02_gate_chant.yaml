@@ -1,0 +1,62 @@
+id: ch0-02
+title: The Gate Chant
+chapter: 0
+order: 2
+optional: false
+concepts: [sequencing, output]
+vim_skill: "j and k (move between lines)"
+lore: |
+  Tilde's gate is carved with a three-line verse. It opens only when the
+  whole chant is spoken, every line, in the right order. The first line is
+  already on the altar. Move down with j to write the rest.
+limits: {timeout_s: 2, max_stdout_kb: 16}
+languages:
+  python:
+    starter: |
+      print("Open, gate of Tilde.")
+      # Line 2 of the chant: The Null shall not pass.
+      # Line 3 of the chant: Wren walks the Modal Way.
+    hints:
+      - &gate_h1 "A spell runs from top to bottom, one line at a time. The gate needs three lines spoken, and you only have one so far."
+      - "Each print(...) speaks one line. Copy the shape of the first line, then change the words. Two more print lines, in order."
+      - "print(\"Open, gate of Tilde.\")\nprint(\"The Null shall not pass.\")\nprint(\"Wren walks the ___ Way.\")"
+    solution: |
+      print("Open, gate of Tilde.")
+      print("The Null shall not pass.")
+      print("Wren walks the Modal Way.")
+  bash:
+    starter: |
+      echo "Open, gate of Tilde."
+      # Line 2 of the chant: The Null shall not pass.
+      # Line 3 of the chant: Wren walks the Modal Way.
+    hints:
+      - *gate_h1
+      - "Each echo \"...\" speaks one line. Copy the shape of the first line, then change the words. Two more echo lines, in order."
+      - "echo \"Open, gate of Tilde.\"\necho \"The Null shall not pass.\"\necho \"Wren walks the ___ Way.\""
+    solution: |
+      echo "Open, gate of Tilde."
+      echo "The Null shall not pass."
+      echo "Wren walks the Modal Way."
+  powershell:
+    starter: |
+      Write-Output "Open, gate of Tilde."
+      # Line 2 of the chant: The Null shall not pass.
+      # Line 3 of the chant: Wren walks the Modal Way.
+    hints:
+      - *gate_h1
+      - "Each Write-Output \"...\" speaks one line. Copy the shape of the first line, then change the words. Two more lines, in order."
+      - "Write-Output \"Open, gate of Tilde.\"\nWrite-Output \"The Null shall not pass.\"\nWrite-Output \"Wren walks the ___ Way.\""
+    solution: |
+      Write-Output "Open, gate of Tilde."
+      Write-Output "The Null shall not pass."
+      Write-Output "Wren walks the Modal Way."
+tests:
+  - name: "The full chant, in order"
+    expect:
+      stdout: "Open, gate of Tilde.\nThe Null shall not pass.\nWren walks the Modal Way.\n"
+      exit_code: 0
+reward:
+  xp: 15
+  items: []
+  unlocks: []
+  world_effect: "The gate's carved verse glows line by line and the gate swings open."

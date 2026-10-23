@@ -1,0 +1,67 @@
+id: ch1-05
+title: The Ferryman's Question
+chapter: 1
+order: 5
+optional: false
+concepts: [input, variables, string-concatenation]
+vim_skill: "0 and $ (jump to start/end of a line)"
+lore: |
+  A hooded ferryman poles the Murmur, but the Null has taken every
+  name it ever knew. It will not push off until it hears one.
+  "WHO RIDES?" it booms, and waits for your spell to answer.
+limits: {timeout_s: 2, max_stdout_kb: 16}
+languages:
+  python:
+    starter: |
+      # The ferryman's words arrive through input().
+      # Catch them in a variable, then greet the rider.
+      name = ___
+      print("Welcome aboard, " + ___ + ". Mind the Null.")
+    hints:
+      - &ferry_h1 "The ferryman speaks first. Your spell has to listen before it answers. Which line should do the listening?"
+      - "input() waits for one line of text and hands it back. Put it on the right-hand side of name = ..."
+      - "First blank: input()   Second blank: name   (Notice \"Welcome aboard, \" already ends with a space.)"
+    solution: |
+      name = input()
+      print("Welcome aboard, " + name + ". Mind the Null.")
+  bash:
+    starter: |
+      # The ferryman's words arrive on stdin.
+      # read catches one line into a variable.
+      ___ -r name
+      echo "Welcome aboard, ___. Mind the Null."
+    hints:
+      - *ferry_h1
+      - "read -r name waits for one line and stores it in name. To use a variable's value, put a $ in front of it."
+      - "First blank: read   Second blank: $name   Keep the double quotes so a name with a space survives."
+    solution: |
+      read -r name
+      echo "Welcome aboard, $name. Mind the Null."
+  powershell:
+    # Read-Host refuses to read under -NonInteractive, so stdin is read through [Console]::In.
+    starter: |
+      # The ferryman's words arrive on stdin: [Console]::In.ReadLine() catches one line.
+      # Catch them in a variable, then greet the rider.
+      $name = ___
+      Write-Output "Welcome aboard, ___. Mind the Null."
+    hints:
+      - *ferry_h1
+      - "[Console]::In.ReadLine() waits for one line of text and hands it back. Put it on the right-hand side of $name = ... Inside double quotes, $name is replaced by its value."
+      - "First blank: [Console]::In.ReadLine()   Second blank: $name   Keep the double quotes so the value is filled in."
+    solution: |
+      $name = [Console]::In.ReadLine()
+      Write-Output "Welcome aboard, $name. Mind the Null."
+tests:
+  - name: "Wren rides"
+    stdin: "Wren\n"
+    expect: {stdout: "Welcome aboard, Wren. Mind the Null.\n", exit_code: 0}
+  - name: "A different rider"
+    stdin: "Pell\n"
+    expect: {stdout: "Welcome aboard, Pell. Mind the Null.\n"}
+  - name: "A rider with two names"
+    stdin: "Mara Fen\n"
+    expect: {stdout: "Welcome aboard, Mara Fen. Mind the Null.\n"}
+reward:
+  xp: 30
+  items: [ferry_token]
+  world_effect: "The ferryman speaks the player's stdout aloud; the route to the Crossroads opens."
