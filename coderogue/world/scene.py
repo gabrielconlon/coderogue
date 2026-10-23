@@ -20,6 +20,7 @@ from coderogue.entities import combat, sprites
 from coderogue.entities.altar import Altar
 from coderogue.entities.base import Entity, StaticProp
 from coderogue.entities.boss import Boss
+from coderogue.entities.companion import Companion
 from coderogue.entities.door import Door
 from coderogue.entities.enemies import Enemy, StampGolem, spawn_enemy
 from coderogue.entities.items import Chest, Pickup
@@ -202,6 +203,7 @@ class WorldScene(Scene):
         self.altar_handler: Callable[[Altar], None] | None = None
         self.show_debug = True
         self.show_help = False
+        self.companion: Companion | None = None
         self.marker_clock = 0.0
         self.message = ""
         self.message_time = 0.0
@@ -293,6 +295,8 @@ class WorldScene(Scene):
         if enter_flag:
             self._progress().flags.add(str(enter_flag))
         self.refresh_unlocks()
+        if self.companion is not None:
+            self.companion.reset()
         self.dismiss_golems()
         self.queued_dialogue.clear()
         intro = props.get("intro_dialogue")
@@ -438,10 +442,21 @@ class WorldScene(Scene):
         flags = self._progress().flags
         return set(BASE_MECHANICS) | {m for m, flag in UNLOCK_FLAGS.items() if flag in flags}
 
+    def _refresh_companion(self) -> None:
+        """Moth tags along once ``moth_joined`` is set; the static Moth npc then steps aside."""
+        if "moth_joined" not in self._progress().flags:
+            return
+        if self.companion is None:
+            self.companion = Companion.moth()
+        for npc in self.npcs:
+            if npc.key == "moth":
+                npc.visible = False
+
     def refresh_unlocks(self, announce: bool = True) -> list[str]:
         """Re-derive :attr:`unlocked` from the progress flags; returns the newly unlocked
         mechanics (in teaching order) and, if ``announce``, queues a toast for each."""
         new = self.compute_unlocked()
+        self._refresh_companion()
         gained = [m for m in UNLOCK_FLAGS if m in new and m not in self.unlocked]
         self.unlocked = new
         if announce:
@@ -1522,6 +1537,8 @@ class WorldScene(Scene):
         self.refresh_unlocks()
         self._update_toast(dt)
         self.area_card.update(dt)
+        if self.companion is not None:
+            self.companion.update(dt, self.player)
         if self.fade.active:
             self.fade.update(dt)
             self.camera.follow(*self.player.center)
@@ -1557,6 +1574,8 @@ class WorldScene(Scene):
         offset = self.camera.offset
         self.tilemap.draw_below(view, offset)
         entities: list[Entity] = [*self.all_entities(), self.player]
+        if self.companion is not None:
+            entities.append(self.companion)
         for ent in sorted(entities, key=lambda e: e.bottom):
             ent.draw(view, offset)
         self.tilemap.draw_above(view, offset)
