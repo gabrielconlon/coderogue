@@ -1,4 +1,5 @@
-"""Heads-up display drawn over the world: hearts, mode, XP/level and area name."""
+"""Heads-up display drawn over the world: hearts, mode, XP/level, coins, ``u`` charges and
+area name."""
 
 from __future__ import annotations
 
@@ -71,14 +72,15 @@ def draw_hud(
 ) -> pygame.Rect:
     """Draw the HUD in the top-left corner and return its rect.
 
-    ``player`` needs ``hp``/``max_hp``; ``mode`` is a mode enum (``.value``) or a string.
+    ``player`` needs ``hp``/``max_hp``; optional ``coins`` and ``u_charges`` are shown when
+    present. ``mode`` is a mode enum (``.value``) or a string.
     """
     hp = int(getattr(player, "hp", 0))
     max_hp = int(getattr(player, "max_hp", hp))
     name = _mode_name(mode)
     level = progress.level if progress is not None else 1
     xp = progress.xp_into_level if progress is not None else 0
-    width = 300
+    width = 340
     rect = pygame.Rect(6, 6, width, 52)
     draw_panel(surface, rect, (*theme.PANEL, 200), theme.BORDER)
     end = draw_hearts(surface, (rect.x + 8, rect.y + 7), hp, max_hp)
@@ -91,6 +93,22 @@ def draw_hud(
     surface.fill(theme.PANEL_ALT, bar)
     surface.fill(theme.GOLD, (bar.x, bar.y, bar.width * xp // XP_PER_LEVEL, bar.height))
     pygame.draw.rect(surface, theme.BORDER, bar, 1)
+    x = bar.right + 10
+    coins = getattr(player, "coins", None)
+    if coins is not None:
+        center = (x + 6, rect.y + 39)
+        pygame.draw.circle(surface, theme.GOLD, center, 6)
+        pygame.draw.circle(surface, (150, 110, 40), center, 6, 1)
+        r = draw_text(surface, str(int(coins)), (x + 15, rect.y + 30), size=14, color=theme.GOLD)
+        x = r.right + 10
+    charges = getattr(player, "u_charges", None)
+    if charges is not None:
+        r = draw_text(surface, f"u:{int(charges)}", (x, rect.y + 30), size=14,
+                      color=MODE_COLORS["VISUAL"])
+        x = r.right + 10
     if area_name:
-        draw_text(surface, area_name, (bar.right + 10, rect.y + 30), size=14, color=theme.MUTED)
+        name = area_name
+        while name and x + render_text(name, 14).get_width() > rect.right - 6:
+            name = name[:-2] + "…" if len(name) > 2 else ""
+        draw_text(surface, name, (x, rect.y + 30), size=14, color=theme.MUTED)
     return rect

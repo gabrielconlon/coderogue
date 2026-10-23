@@ -1,8 +1,10 @@
-"""The hero: 4-direction movement, dash (``w``/``b``) and strike (``x``)."""
+"""The hero: 4-direction movement, dash (``w``/``b``), strike (``x``), cleave (``dd``),
+rewind (``u``), carrying a lifted object (``yy``/``p``), coins and hearts."""
 
 from __future__ import annotations
 
 import math
+from collections import deque
 from typing import Any
 
 import pygame
@@ -26,6 +28,15 @@ KNOCKBACK_SPEED = 160.0
 KNOCKBACK_TIME = 0.12
 WALK_FRAME_TIME = 0.15
 SPRITE_FACES_LEFT = True  # Kenney Tiny Dungeon characters look left
+HP_PER_HEART = 2
+CLEAVE_REACH_TILES = 8  # the cleave covers this many tiles on each side of the hero
+CLEAVE_ACTIVE = 0.15  # how long the cleave flash is drawn
+CLEAVE_COOLDOWN = 0.6
+TRAIL_SAMPLE = 0.05  # rewind trail sampling period (s)
+TRAIL_SAMPLES = 60  # 60 x 50 ms = 3 s of movement
+REWIND_TIME = 0.3  # how long playing the trail back takes
+REWIND_IFRAME_PAD = 0.1
+MAX_U_CHARGES = 3
 
 
 def _sign(v: float) -> int:
@@ -61,6 +72,37 @@ class Player(Entity):
         self.iframes = 0.0
         self.knockback_time = 0.0
         self.knockback: tuple[float, float] = (0.0, 0.0)
+        # cleave (dd)
+        self.cleave_timer = 0.0  # > 0 while the cleave flash shows
+        self.cleave_cooldown = 0.0
+        self.cleave_rect: tuple[float, float, float, float] | None = None
+        # rewind (u)
+        self.trail: deque[tuple[float, float]] = deque(maxlen=TRAIL_SAMPLES)
+        self.trail_clock = 0.0
+        self.u_charges = MAX_U_CHARGES
+        self.rewind_path: list[tuple[float, float]] = []
+        self.rewind_time = 0.0
+        # inventory
+        self.coins = 0
+        self.items: list[str] = []
+        self.carrying: Entity | None = None
+
+    # ---- hearts -----------------------------------------------------------------------
+    @property
+    def hearts_max(self) -> int:
+        """Number of heart containers (each holds ``HP_PER_HEART`` hp)."""
+        return max(1, self.max_hp // HP_PER_HEART)
+
+    @hearts_max.setter
+    def hearts_max(self, value: int) -> None:
+        self.max_hp = max(1, int(value)) * HP_PER_HEART
+        self.hp = min(self.hp, self.max_hp)
+
+    def heal(self, hp: int) -> int:
+        """Restore up to ``hp`` hit points; returns how many were actually restored."""
+        before = self.hp
+        self.hp = min(self.max_hp, self.hp + max(0, hp))
+        return self.hp - before
 
     # ---- state queries ----------------------------------------------------------------
     @property
@@ -75,8 +117,22 @@ class Player(Entity):
 
     @property
     def invulnerable(self) -> bool:
-        """True while i-frames are running (dashing or recently hurt)."""
+        """True while i-frames are running (dashing, rewinding or recently hurt)."""
         return self.iframes > 0
+
+    @property
+    def rewinding(self) -> bool:
+        """True while ``u`` is playing the movement trail back."""
+        return bool(self.rewind_path)
+
+    def cleave_box(self) -> tuple[float, float, float, float]:
+        """The ``dd`` hitbox: the hero's whole row (facing left/right) or column (up/down),
+        ``CLEAVE_REACH_TILES`` tiles to each side."""
+        cx, cy = self.center
+        reach = CLEAVE_REACH_TILES * TILE
+        if self.facing[0] != 0:
+            return (cx - reach, cy - TILE / 2, 2 * reach, TILE)
+        return (cx - TILE / 2, cy - reach, TILE, 2 * reach)
 
     def attack_box(self) -> tuple[float, float, float, float] | None:
         """The strike hitbox (one tile in the facing direction) while active, else None."""
@@ -119,6 +175,36 @@ class Player(Entity):
         self.dash_time = n * TILE / DASH_SPEED
         self.iframes = max(self.iframes, self.dash_time + DASH_IFRAME_PAD)
         return True
+
+    def cleave(self) -> tuple[float, float, float, float] | None:
+        """Start a ``dd`` cleave. Returns its hitbox, or None while on cooldown."""
+        if self.cleave_cooldown > 0 or self.rewinding:
+            return None
+        self.cleave_cooldown = CLEAVE_COOLDOWN
+        self.cleave_timer = CLEAVE_ACTIVE
+        self.cleave_rect = self.cleave_box()
+        return self.cleave_rect
+
+    def rewind(self) -> bool:
+        """``u``: replay the last 3 s of movement backwards. Uses one charge."""
+        if self.u_charges <= 0 or self.rewinding or len(self.trail) < 2:
+            return False
+        self.u_charges -= 1
+        path = list(self.trail)
+        path.reverse()
+        self.rewind_path = path
+        self.rewind_time = 0.0
+        self.trail.clear()
+        self.dash_time = 0.0
+        self.knockback_time = 0.0
+        self.attack_phase = None
+        self.queued_strikes = 0
+        self.iframes = max(self.iframes, REWIND_TIME + REWIND_IFRAME_PAD)
+        return True
+
+    def refill_charges(self) -> None:
+        """Rest at a waystone: ``u`` charges back to full."""
+        self.u_charges = MAX_U_CHARGES
 
     def hurt(self, damage: int, source: tuple[float, float] | None = None) -> bool:
         """Take damage unless invulnerable. Returns True if damage was applied."""
@@ -174,6 +260,12 @@ class Player(Entity):
         """Advance one fixed step with the held movement direction ``move``."""
         grid: CollisionGrid = world.collision
         self.iframes = max(0.0, self.iframes - dt)
+        self.cleave_cooldown = max(0.0, self.cleave_cooldown - dt)
+        self.cleave_timer = max(0.0, self.cleave_timer - dt)
+        if self.rewinding:
+            self._tick_rewind(dt)
+            return
+        self._record_trail(dt)  # sample the position before this step's movement
         if not self.dashing:
             self.dash_cooldown = max(0.0, self.dash_cooldown - dt)
         self._tick_attack(dt)
@@ -211,14 +303,60 @@ class Player(Entity):
             self.anim_time = 0.0
             self.bob = 0
 
+    def _record_trail(self, dt: float) -> None:
+        self.trail_clock += dt
+        if self.trail_clock >= TRAIL_SAMPLE - 1e-9 or not self.trail:
+            self.trail_clock = 0.0
+            self.trail.append((self.x, self.y))
+
+    def _tick_rewind(self, dt: float) -> None:
+        """Move along the reversed trail; the whole trail plays back in ``REWIND_TIME``."""
+        self.rewind_time += dt
+        path = self.rewind_path
+        frac = min(1.0, self.rewind_time / REWIND_TIME)
+        idx = min(len(path) - 1, int(frac * (len(path) - 1)))
+        self.x, self.y = path[idx]
+        self.moving = False
+        self.bob = 0
+        if frac >= 1.0:
+            self.x, self.y = path[-1]
+            self.rewind_path = []
+            self.trail.clear()
+            self.trail_clock = 0.0
+
     def draw(self, surface: pygame.Surface, offset: tuple[int, int]) -> None:
-        """Draw the hero (blinking during hurt i-frames) and the strike arc when active."""
-        hurt_blink = self.iframes > 0 and not self.dashing and int(self.iframes * 20) % 2
+        """Draw the hero (blinking during hurt i-frames), any carried object above the head,
+        the strike arc and the cleave flash."""
+        hurt_blink = (
+            self.iframes > 0 and not self.dashing and not self.rewinding
+            and int(self.iframes * 20) % 2
+        )
+        if self.rewinding:
+            self._draw_rewind_ghosts(surface, offset)
         if not hurt_blink:
             super().draw(surface, offset)
+        carried = self.carrying
+        if carried is not None and carried.sprite is not None:
+            sw, sh = carried.sprite.get_size()
+            sx = round(self.x + self.w / 2 - sw / 2) - offset[0]
+            sy = round(self.y + self.h - 16 - sh + 4) - offset[1] + self.bob
+            surface.blit(carried.sprite, (sx, sy))
+        if self.cleave_timer > 0 and self.cleave_rect is not None:
+            x, y, w, h = self.cleave_rect
+            r = pygame.Rect(round(x) - offset[0], round(y) - offset[1], int(w), int(h))
+            pygame.draw.rect(surface, (255, 240, 170), r.inflate(0, -10), 1)
+            if w > h:
+                pygame.draw.line(surface, (255, 255, 255), r.midleft, r.midright)
+            else:
+                pygame.draw.line(surface, (255, 255, 255), r.midtop, r.midbottom)
         box = self.attack_box()
         if box is not None:
             x, y, w, h = box
             r = pygame.Rect(round(x) - offset[0], round(y) - offset[1], int(w), int(h))
             pygame.draw.rect(surface, (255, 240, 170), r.inflate(-6, -6), 1)
             pygame.draw.line(surface, (255, 255, 255), r.topleft, r.bottomright)
+
+    def _draw_rewind_ghosts(self, surface: pygame.Surface, offset: tuple[int, int]) -> None:
+        for gx, gy in self.rewind_path[:: max(1, len(self.rewind_path) // 6)]:
+            r = pygame.Rect(round(gx) - offset[0], round(gy) - offset[1], int(self.w), int(self.h))
+            pygame.draw.rect(surface, (150, 140, 240), r, 1)

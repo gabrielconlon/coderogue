@@ -37,22 +37,48 @@ Tile layers are drawn in Tiled order, under the characters:
 
 Other tile layers are drawn but have no special meaning. Group layers are flattened.
 
+## Map properties
+
+| Property | Meaning |
+|---|---|
+| `area` | Area name shown in the HUD and as a big title card on entry (falls back to `name`, then the file stem). |
+| `enter_flag` | Progress flag set whenever the map is loaded (e.g. `entered:echo_vale`). |
+
 ## Objects
 
 Put objects on an object layer named `objects`. Set the object's **Type** (Tiled 1.10+,
 called *Class* in Tiled 1.9) to one of the values below. Rectangles or tile objects both
-work; the object's centre is used for placement.
+work; the object's centre is used for placement. Any object can override its sprite with
+`tile` (int id) and `sheet` (`dungeon`, the default, or `town`).
 
 | Type | Meaning | Custom properties |
 |---|---|---|
-| `player_spawn` | Where the hero starts. Use one per map. | |
-| `altar` | A Terminal shard; `i`/`Enter` opens the puzzle. | `puzzle` (string, e.g. `P-01`) |
-| `enemy` | A wandering bug. | `hp` (int, default 3), `speed` (float px/s, default 30), `tile` (int sprite id, default 110) |
-| `npc` | A character (static for now). | `tile` (int, default 96) |
-| `chest` | A chest (static for now). | `tile` (int, default 89) |
-| `door` | A door / exit (static for now). | `tile` (int, optional), later `target` |
+| `player_spawn` | Where the hero appears. The first one is the default; doors name others. | |
+| `altar` | A Terminal shard; `i`/`Enter` opens the puzzle. | `puzzle` (e.g. `P-01`, `ch1-b`), `phase` (boss lecterns: `a`/`b`/`c` or 0-based int) |
+| `enemy` | A bug (see `coderogue/entities/enemies.py`). | `kind` (`typo_mite`, `off_by_one`, `leak`, `looper`, `null_wisp`, `stamp_golem`; default wanderer; `kind=boss` + `boss=grubble/ouroboros/hollow_archivist`), `hp`, `speed`, `tile` |
+| `npc` | A character you talk to. | `dialogue` (key, default the lower-cased name), `tile` (default 96) |
+| `door` | An exit to another map, or a gate. | `target` (map stem, e.g. `echo_vale`; omit for a gate), `spawn` (name of a `player_spawn` in the target, default `spawn`), `locked_by` (progress flag), `requires_solved` (puzzle id), `plate` (name of a `plate`), `tile` (default 45) |
+| `waystone` | Respawn point and save spot; `i` opens the waystone menu (seal, Ledger, rest). `m{a-z}` marks it. | `tile` (default Tiny Town 83, the signpost) |
+| `chest` | Opens once with `i`. | `coins` (int), `item` (string), `tile` (default 89; opened 91) |
+| `potion` | Heals on touch (not at full health). | `heal` (hp, default 2 = one heart), `tile` (default 115) |
+| `coin` | Adds coins on touch. | `value` (default 1), `tile` (default Tiny Town 93) |
+| `liftable` | A crate: solid on the ground, lifted with `yy`, put down with `p`. | `tile` (default 63) |
+| `plate` | Pressure plate, pressed while a liftable rests on it. | `tile` (optional; drawn as a slab otherwise) |
+| `prop` | Plain decoration. | `tile` |
 
-Give objects a `name` so scripts and puzzles can refer to them.
+Give objects a `name`: doors, marks, saves and `/` search refer to them by name.
+
+### Doors, locks and transitions
+
+- Walking onto an open door with a `target` fades out (0.25 s), loads the target map in
+  place, puts the hero at the `spawn` and fades in. Arriving on top of a door does not
+  trigger it until the hero steps off.
+- A door is **locked** while its `locked_by` flag is missing, its `requires_solved` puzzle
+  is unsolved, or its `plate` is not pressed. Locked doors are solid, greyed with a Null-wash
+  and say "The Null holds this door" on touch.
+- A door without `target` is a **gate**: solid while locked, passable once open.
+- Taken pickups and opened chests are remembered as progress flags
+  (`taken:<map>#<id>`, `opened:<map>#<id>`).
 
 ## Testing a map
 
@@ -61,7 +87,8 @@ Give objects a `name` so scripts and puzzles can refer to them.
 .venv/bin/python -m coderogue --headless-frames 60 --map content/maps/your_map.tmj
 ```
 
-`test_room.tmj` is the reference example.
+`test_room.tmj` is the reference example; `test_room2.tmj` (linked by doors both ways)
+shows a waystone, chest, potion, coin, crate + plate + plate gate, and a Null-locked door.
 
 ## Authoring with mapgen
 

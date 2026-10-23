@@ -77,6 +77,7 @@ class Game:
         from coderogue.save.store import SaveStore
 
         self.saves = SaveStore()
+        self.world: WorldScene | None = None  # the one world scene, once play starts
 
     # ---- scene stack ------------------------------------------------------------------
     @property
@@ -217,7 +218,7 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def _restore_save(game: Game, world: WorldScene) -> None:
-    """Load slot1 if it exists and matches the current map; otherwise start fresh."""
+    """Load slot1 (progress, map, position, coins, waystones...) if it exists."""
     from coderogue.progress import Progress
     from coderogue.world.scene import SAVE_SLOT
 
@@ -228,10 +229,25 @@ def _restore_save(game: Game, world: WorldScene) -> None:
     if state is None:
         return
     game.progress = Progress.from_dict(state.progress)
-    if state.map and Path(state.map).resolve() == world.map_path.resolve():
-        world.player.x, world.player.y = state.player.x, state.player.y
-        world.player.hp = state.player.hp
-    world._sync_altars()
+    try:
+        world.restore_state(state)
+    except Exception:  # noqa: BLE001 - a save pointing at a broken map must not block play
+        world._sync_altars()
+
+
+def start_world(game: Game, map_path: Path, new: bool = False) -> WorldScene:
+    """Build the world scene (restoring slot1 unless ``new``) and remember it as
+    ``game.world``."""
+    from coderogue.progress import Progress
+    from coderogue.world.scene import WorldScene
+
+    if new:
+        game.progress = Progress()
+    world = WorldScene(game, map_path)
+    if not new:
+        _restore_save(game, world)
+    game.world = world
+    return world
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -243,16 +259,19 @@ def main(argv: list[str] | None = None) -> int:
         os.environ["SDL_AUDIODRIVER"] = "dummy"
     import pygame
 
-    from coderogue.world.scene import WorldScene
-
     map_path = _resolve_map(args.map)
     game = Game(headless=headless)
     game.arrows_fallback = args.arrows
     try:
-        world = WorldScene(game, map_path)
-        if not args.new:
-            _restore_save(game, world)
-        game.push(world)
+        if args.map is not None or headless:
+            game.push(start_world(game, map_path, new=args.new))
+        else:
+            from coderogue.title import TitleScene
+
+            def begin(new: bool) -> None:
+                game.replace(start_world(game, map_path, new=new))
+
+            game.push(TitleScene(game, begin))
         return game.run(max_frames=args.headless_frames if headless else None)
     finally:
         pygame.quit()

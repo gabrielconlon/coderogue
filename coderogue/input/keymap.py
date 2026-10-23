@@ -1,7 +1,9 @@
 """Action names and key bindings.
 
 The default binding is VIM: ``h j k l`` to move, ``x`` to strike, ``w``/``b`` to dash,
-``Enter``/``i`` to interact, ``Esc`` to escape and ``:`` for the command line. With
+``Enter``/``i`` to interact, ``Esc`` to escape and ``:`` for the command line. World
+mechanics add ``v`` (lock-on), ``d`` (``dd`` cleave), ``u`` (rewind), ``y``/``p`` (``yy`` lift,
+``p`` put), ``/`` and ``n`` (search), ``m`` and ``'`` (marks). With
 ``arrows_fallback=True`` the arrow keys and WASD are bound *as well* (WASD's ``w`` then
 moves up instead of dashing, so dashes move to Shift / Ctrl in fallback mode).
 """
@@ -30,6 +32,13 @@ class Action(Enum):
     UNDO = auto()
     CONFIRM = auto()
     DEBUG = auto()
+    DELETE = auto()  # ``d``: the world scene turns ``dd`` into a cleave
+    YANK = auto()  # ``y``: ``yy`` lifts a liftable object
+    PUT = auto()  # ``p``: put the carried object down
+    SEARCH = auto()  # ``/``: start a search prompt
+    SEARCH_NEXT = auto()  # ``n``: next search match
+    MARK = auto()  # ``m`` + letter: set a mark at a waystone
+    JUMP_MARK = auto()  # ``'`` + letter: fast-travel to a mark
 
 
 MOVE_ACTIONS: dict[Action, tuple[int, int]] = {
@@ -54,6 +63,11 @@ VIM_KEYS: dict[int, Action] = {
     pygame.K_v: Action.VISUAL,
     pygame.K_u: Action.UNDO,
     pygame.K_F3: Action.DEBUG,
+    pygame.K_d: Action.DELETE,
+    pygame.K_y: Action.YANK,
+    pygame.K_p: Action.PUT,
+    pygame.K_n: Action.SEARCH_NEXT,
+    pygame.K_m: Action.MARK,
 }
 
 FALLBACK_KEYS: dict[int, Action] = {
@@ -74,7 +88,11 @@ FALLBACK_KEYS: dict[int, Action] = {
 
 # Bindings matched on the typed character rather than the key (``:`` is Shift+; on US
 # layouts but a plain key elsewhere).
-VIM_CHARS: dict[str, Action] = {":": Action.COMMAND}
+VIM_CHARS: dict[str, Action] = {
+    ":": Action.COMMAND,
+    "/": Action.SEARCH,
+    "'": Action.JUMP_MARK,
+}
 
 
 class Keymap:
