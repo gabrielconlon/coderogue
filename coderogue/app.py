@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
+    from coderogue.puzzles import PuzzleSpec
     from coderogue.scene import Scene
 
 LOGICAL_SIZE = (960, 540)
@@ -68,6 +69,10 @@ class Game:
         self.frame = 0
         self.time = 0.0  # simulated seconds
         self.arrows_fallback = False
+        from coderogue.progress import Progress
+
+        self.puzzles: dict[str, PuzzleSpec] = {}  # loaded lazily by coderogue.altar
+        self.progress = Progress()
 
     # ---- scene stack ------------------------------------------------------------------
     @property

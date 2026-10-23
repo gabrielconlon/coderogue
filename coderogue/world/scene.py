@@ -16,7 +16,8 @@ from coderogue.entities.player import Player
 from coderogue.input.keymap import MOVE_ACTIONS, Action, Keymap
 from coderogue.input.modes import Mode, ModeMachine
 from coderogue.scene import Scene
-from coderogue.ui.text import draw_text
+from coderogue.ui.hud import draw_hud
+from coderogue.ui.text import draw_text, render_text
 from coderogue.world.camera import Camera
 from coderogue.world.collision import boxes_overlap
 from coderogue.world.loader import MapObject
@@ -24,6 +25,7 @@ from coderogue.world.tilemap import TileMap
 
 if TYPE_CHECKING:
     from coderogue.app import Game
+    from coderogue.puzzles import PuzzleResult, PuzzleSpec
 
 VIEW_SIZE = (320, 180)  # world pixels shown; scaled 3x to the 960x540 logical surface
 BG_COLOR = (20, 16, 24)
@@ -39,8 +41,10 @@ def _tile_prop(obj: MapObject, default: int | None) -> int | None:
 class WorldScene(Scene):
     """Top-down real-time play in NORMAL mode.
 
-    Set ``altar_handler`` (or override :meth:`on_altar`) to open the editor when the player
-    presses INTERACT at an altar.
+    Pressing INTERACT (``i`` / Enter) at an altar calls :meth:`on_altar`, which by default
+    pushes an :class:`~coderogue.altar.AltarScene` for the altar's puzzle. Set
+    ``altar_handler`` (or override :meth:`on_altar`) to replace that. When a puzzle is solved
+    the altar scene calls :meth:`on_puzzle_solved` (and :meth:`on_puzzle_skipped` on a skip).
     """
 
     def __init__(self, game: Game, map_path: str | Path, keymap: Keymap | None = None) -> None:
@@ -67,6 +71,9 @@ class WorldScene(Scene):
         self.message_time = 0.0
         self.player = self._spawn_entities()
         self.camera.follow(*self.player.center)
+        props = self.tilemap.data.properties
+        self.area_name = str(props.get("area") or props.get("name") or self.map_path.stem)
+        self._sync_altars()
 
     # ---- setup ------------------------------------------------------------------------
     def _spawn_entities(self) -> Player:
@@ -204,14 +211,57 @@ class WorldScene(Scene):
                 return altar
         return None
 
+    def _sync_altars(self) -> None:
+        """Light the altars whose puzzles are already solved in ``game.progress``."""
+        progress = getattr(self.game, "progress", None)
+        if progress is None or not self.altars:
+            return
+        from coderogue.altar import game_puzzles, resolve_puzzle_id
+        from coderogue.puzzles import SpecError
+
+        try:
+            puzzles = game_puzzles(self.game)
+        except SpecError:
+            return
+        for altar in self.altars:
+            pid = resolve_puzzle_id(puzzles, altar.puzzle)
+            altar.lit = pid is not None and progress.is_solved(pid)
+
     def on_altar(self, altar: Altar) -> None:
-        """Player interacted with ``altar``. Stub until the editor scene exists."""
+        """Player interacted with ``altar``: open the altar editor for its puzzle."""
         self.held.clear()
         if self.altar_handler is not None:
             self.altar_handler(altar)
             return
-        print(f"[altar] {altar.name or 'altar'} (puzzle={altar.puzzle!r})")
-        self.flash(f"The altar hums: {altar.puzzle or '...'}")
+        from coderogue.altar import AltarScene, game_puzzles, resolve_puzzle_id
+        from coderogue.progress import Progress
+        from coderogue.puzzles import SpecError
+
+        try:
+            puzzles = game_puzzles(self.game)
+        except SpecError as exc:
+            self.flash(f"The altar's runes are garbled ({exc})")
+            return
+        pid = resolve_puzzle_id(puzzles, altar.puzzle)
+        if pid is None:
+            self.flash(f"The altar is silent (no puzzle {altar.puzzle!r}).")
+            return
+        progress = getattr(self.game, "progress", None)
+        if progress is None:
+            progress = Progress()
+            self.game.progress = progress
+        self.modes.set_mode(Mode.NORMAL)
+        self.game.push(AltarScene(self.game, self, altar, puzzles[pid], progress))
+
+    def on_puzzle_solved(self, spec: PuzzleSpec, result: PuzzleResult) -> None:
+        """An altar's puzzle was solved: light every altar for it and announce the reward."""
+        self._sync_altars()
+        effect = spec.reward.world_effect or "The altar lights."
+        self.flash(effect, seconds=5.0)
+
+    def on_puzzle_skipped(self, spec: PuzzleSpec) -> None:
+        """The player skipped ``spec``: Pell's ghostly bridge spans the gap (altar stays unlit)."""
+        self.flash("A ghostly Pell-bridge shimmers into place. The altar stays unlit.", 5.0)
 
     # ---- simulation -------------------------------------------------------------------
     def update(self, dt: float) -> None:
@@ -257,16 +307,20 @@ class WorldScene(Scene):
 
     def _draw_overlay(self, surface: pygame.Surface) -> None:
         w, h = surface.get_size()
+        draw_hud(
+            surface, self.player, getattr(self.game, "progress", None), self.modes.mode,
+            self.area_name,
+        )
         if self.show_debug:
             px, py = self.player.center
             fps = self.game.clock.get_fps() if hasattr(self.game, "clock") else 0.0
             count = self.modes.count_text
             line = (
-                f"FPS {fps:5.1f}  -- {self.modes.mode.value} --"
-                f"{'  ' + count if count else ''}  pos {px:6.1f},{py:6.1f}"
-                f"  hp {self.player.hp}/{self.player.max_hp}"
+                f"FPS {fps:5.1f}{'  count ' + count if count else ''}"
+                f"  pos {px:6.1f},{py:6.1f}"
             )
-            draw_text(surface, line, (8, 6), size=14)
+            width = render_text(line, 14).get_width()
+            draw_text(surface, line, (w - width - 8, 6), size=14)
         if self.modes.mode is Mode.COMMAND:
             pygame.draw.rect(surface, (0, 0, 0), (0, h - 26, w, 26))
             draw_text(surface, ":" + self.modes.command_buffer + "_", (8, h - 22), size=16)
