@@ -561,6 +561,7 @@ class HollowArchivist(Boss):
     """
 
     kind = "hollow_archivist"
+    phase_count = 4  # 3-B has four phases (a-d), one lectern each
 
     def __init__(self, x: float, y: float, sprite: pygame.Surface | None = None, **kw: Any) -> None:
         points = kw.pop("points", None)
