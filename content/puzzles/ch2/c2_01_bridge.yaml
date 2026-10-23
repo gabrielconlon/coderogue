@@ -1,0 +1,94 @@
+id: ch2-01
+title: The Bridge That Counts
+chapter: 2
+order: 1
+optional: false
+concepts: [if-else, comparison, input]
+vim_skill: "3j (count a motion: three lines down)"
+lore: |
+  Branchwood's first fork is a rope bridge with opinions. It holds a hundred
+  stone and not a pebble more, and it has been right about this for
+  centuries. Tell it what a traveler weighs and it will answer PASS or
+  TOO HEAVY. A traveler of exactly 100 is fine. "Rules are rules," creaks
+  the bridge, "but I am not a monster."
+limits: {timeout_s: 2, max_stdout_kb: 16}
+languages:
+  python:
+    starter: |
+      # The traveler's weight arrives through input().
+      w = int(input())
+      # The bridge holds up to 100 stone, and 100 itself is fine.
+      if w ___ 100:
+          print("PASS")
+      else:
+          print("TOO HEAVY")
+    hints:
+      - &bridge_h1 "The bridge asks one question: is the weight at most 100? If yes, one answer; otherwise, the other. That is exactly what if and else are for."
+      - "Python has <= for 'less than or equal to'. Using < alone would turn away a traveler of exactly 100."
+      - "Blank: <="
+    solution: |
+      w = int(input())
+      if w <= 100:
+          print("PASS")
+      else:
+          print("TOO HEAVY")
+  bash:
+    starter: |
+      # The traveler's weight arrives on stdin.
+      read -r w
+      # The bridge holds up to 100 stone, and 100 itself is fine.
+      if [ "$w" ___ 100 ]; then
+        echo "PASS"
+      else
+        echo "TOO HEAVY"
+      fi
+    hints:
+      - *bridge_h1
+      - "In bash, numbers are compared with words: -le is 'less than or equal', -lt is 'less than'. A traveler of exactly 100 needs the 'or equal'."
+      - "Blank: -le"
+    solution: |
+      read -r w
+      if [ "$w" -le 100 ]; then
+        echo "PASS"
+      else
+        echo "TOO HEAVY"
+      fi
+  powershell:
+    starter: |
+      # The traveler's weight arrives on stdin.
+      $w = [int][Console]::In.ReadLine()
+      # The bridge holds up to 100 stone, and 100 itself is fine.
+      if ($w ___ 100) {
+          Write-Output "PASS"
+      } else {
+          Write-Output "TOO HEAVY"
+      }
+    hints:
+      - *bridge_h1
+      - "PowerShell compares with words: -le is 'less than or equal', -lt is 'less than'. A traveler of exactly 100 needs the 'or equal'."
+      - "Blank: -le"
+    solution: |
+      $w = [int][Console]::In.ReadLine()
+      if ($w -le 100) {
+          Write-Output "PASS"
+      } else {
+          Write-Output "TOO HEAVY"
+      }
+tests:
+  - name: "A light traveler"
+    stdin: "42\n"
+    expect: {stdout: "PASS\n", exit_code: 0}
+  - name: "Exactly 100 (the bridge allows it)"
+    stdin: "100\n"
+    expect: {stdout: "PASS\n"}
+  - name: "One stone too many"
+    stdin: "101\n"
+    expect: {stdout: "TOO HEAVY\n"}
+  - name: "A traveler with a very full pack"
+    stdin: "250\n"
+    expect: {stdout: "TOO HEAVY\n"}
+reward:
+  xp: 40
+  items: [rope_token]
+  unlocks: []
+  world_effect: "The bridge stops creaking and the gate beyond it swings open onto the road to Sable's lodge."

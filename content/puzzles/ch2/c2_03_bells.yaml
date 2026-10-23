@@ -1,0 +1,91 @@
+id: ch2-03
+title: Silence the Bells
+chapter: 2
+order: 3
+optional: false
+concepts: [while, countdown, termination, input]
+vim_skill: "u (undo)"
+lore: |
+  The Mire's bells have been ringing since before the Null, and nobody
+  remembers who started them. The old bell-keeper says each bell must be
+  silenced in order, counting down from the loudest to number 1, then a
+  moment of quiet. "Count down," she whispers, "and for pity's sake, stop
+  at the bottom."
+limits: {timeout_s: 2, max_stdout_kb: 16}
+languages:
+  python:
+    starter: |
+      # n, the loudest bell, arrives through input().
+      n = int(input())
+      while n ___ 0:
+          print(n)
+          n = n ___ 1
+      print("Silence.")
+    hints:
+      - &bells_h1 "A while loop repeats as long as its condition is true. Count down by printing n, then making n smaller, and stop once n runs out."
+      - "The loop should run while n is greater than 0, and each lap must lower n by 1. Forget the lowering and the bells ring forever."
+      - "First blank: >   Second blank: -"
+    solution: |
+      n = int(input())
+      while n > 0:
+          print(n)
+          n = n - 1
+      print("Silence.")
+  bash:
+    starter: |
+      # n, the loudest bell, arrives on stdin.
+      read -r n
+      while [ "$n" ___ 0 ]; do
+        echo "$n"
+        n=$((n ___ 1))
+      done
+      echo "Silence."
+    hints:
+      - *bells_h1
+      - "The loop should run while n is greater than 0 (-gt in bash), and each lap must lower n by 1 inside $(( )). Forget the lowering and the bells ring forever."
+      - "First blank: -gt   Second blank: -"
+    solution: |
+      read -r n
+      while [ "$n" -gt 0 ]; do
+        echo "$n"
+        n=$((n - 1))
+      done
+      echo "Silence."
+  powershell:
+    starter: |
+      # n, the loudest bell, arrives on stdin.
+      $n = [int][Console]::In.ReadLine()
+      while ($n ___ 0) {
+          Write-Output $n
+          $n = $n ___ 1
+      }
+      Write-Output "Silence."
+    hints:
+      - *bells_h1
+      - "The loop should run while $n is greater than 0 (-gt in PowerShell), and each lap must lower $n by 1. Forget the lowering and the bells ring forever."
+      - "First blank: -gt   Second blank: -"
+    solution: |
+      $n = [int][Console]::In.ReadLine()
+      while ($n -gt 0) {
+          Write-Output $n
+          $n = $n - 1
+      }
+      Write-Output "Silence."
+tests:
+  - name: "Three bells"
+    stdin: "3\n"
+    expect: {stdout: "3\n2\n1\nSilence.\n", exit_code: 0}
+  - name: "One bell"
+    stdin: "1\n"
+    expect: {stdout: "1\nSilence.\n"}
+  - name: "No bells at all"
+    stdin: "0\n"
+    expect: {stdout: "Silence.\n"}
+  - name: "A louder chorus"
+    stdin: "6\n"
+    expect: {stdout: "6\n5\n4\n3\n2\n1\nSilence.\n"}
+reward:
+  xp: 50
+  items: [bell_clapper]
+  unlocks: []
+  world_effect: "The bells on the causeway fall quiet and the fog thins enough to see the next lantern post."

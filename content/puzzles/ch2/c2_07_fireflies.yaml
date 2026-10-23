@@ -1,0 +1,122 @@
+id: ch2-07
+title: The Firefly Rhythm
+chapter: 2
+order: 7
+optional: true
+concepts: [modulo, order-of-conditions, loops]
+vim_skill: "u (undo)"
+lore: |
+  The Mire's fireflies keep a rhythm older than the swamp. Every third one
+  glows, every fifth one hums, and every fifteenth does both at once, which
+  startles the frogs. Count the fireflies from 1 to n and call out each
+  one's behavior. "Test the rare case first," the old ranger warns, "or the
+  rare case never gets its turn."
+limits: {timeout_s: 2, max_stdout_kb: 16}
+languages:
+  python:
+    starter: |
+      # n, the number of fireflies, arrives through input().
+      n = int(input())
+      for i in range(1, n + 1):
+          if i % ___ == 0:
+              print("GlowHum")
+          elif i % 3 == 0:
+              print("Glow")
+          elif i % 5 == 0:
+              print("Hum")
+          else:
+              print(___)
+    hints:
+      - &fireflies_h1 "i % k is the remainder after dividing i by k, so it is 0 when k divides i evenly. A firefly that is both a third and a fifth must be checked before either alone."
+      - "Multiples of both 3 and 5 are multiples of 15. Test i % 15 == 0 first, then 3, then 5, and fall through to printing the plain number."
+      - "First blank: 15   Second blank: i"
+    solution: |
+      n = int(input())
+      for i in range(1, n + 1):
+          if i % 15 == 0:
+              print("GlowHum")
+          elif i % 3 == 0:
+              print("Glow")
+          elif i % 5 == 0:
+              print("Hum")
+          else:
+              print(i)
+  bash:
+    starter: |
+      # n, the number of fireflies, arrives on stdin.
+      read -r n
+      for ((i=1; i<=n; i++)); do
+        if [ $((i % ___)) -eq 0 ]; then
+          echo "GlowHum"
+        elif [ $((i % 3)) -eq 0 ]; then
+          echo "Glow"
+        elif [ $((i % 5)) -eq 0 ]; then
+          echo "Hum"
+        else
+          echo "___"
+        fi
+      done
+    hints:
+      - *fireflies_h1
+      - "Multiples of both 3 and 5 are multiples of 15. Test $((i % 15)) first, then 3, then 5, and fall through to echoing the plain number with $i."
+      - "First blank: 15   Second blank: $i"
+    solution: |
+      read -r n
+      for ((i=1; i<=n; i++)); do
+        if [ $((i % 15)) -eq 0 ]; then
+          echo "GlowHum"
+        elif [ $((i % 3)) -eq 0 ]; then
+          echo "Glow"
+        elif [ $((i % 5)) -eq 0 ]; then
+          echo "Hum"
+        else
+          echo "$i"
+        fi
+      done
+  powershell:
+    starter: |
+      # n, the number of fireflies, arrives on stdin.
+      $n = [int][Console]::In.ReadLine()
+      for ($i = 1; $i -le $n; $i++) {
+          if ($i % ___ -eq 0) {
+              Write-Output "GlowHum"
+          } elseif ($i % 3 -eq 0) {
+              Write-Output "Glow"
+          } elseif ($i % 5 -eq 0) {
+              Write-Output "Hum"
+          } else {
+              Write-Output ___
+          }
+      }
+    hints:
+      - *fireflies_h1
+      - "Multiples of both 3 and 5 are multiples of 15. Test $i % 15 -eq 0 first, then 3, then 5, and fall through to printing the plain number."
+      - "First blank: 15   Second blank: $i"
+    solution: |
+      $n = [int][Console]::In.ReadLine()
+      for ($i = 1; $i -le $n; $i++) {
+          if ($i % 15 -eq 0) {
+              Write-Output "GlowHum"
+          } elseif ($i % 3 -eq 0) {
+              Write-Output "Glow"
+          } elseif ($i % 5 -eq 0) {
+              Write-Output "Hum"
+          } else {
+              Write-Output $i
+          }
+      }
+tests:
+  - name: "A full beat"
+    stdin: "15\n"
+    expect: {stdout: "1\n2\nGlow\n4\nHum\nGlow\n7\n8\nGlow\nHum\n11\nGlow\n13\n14\nGlowHum\n", exit_code: 0}
+  - name: "Before anything glows"
+    stdin: "2\n"
+    expect: {stdout: "1\n2\n"}
+  - name: "Just past the first hum"
+    stdin: "6\n"
+    expect: {stdout: "1\n2\nGlow\n4\nHum\nGlow\n"}
+reward:
+  xp: 70
+  items: [firefly_jar]
+  unlocks: []
+  world_effect: "The fireflies settle into a steady rhythm and light a safe path through the reeds."

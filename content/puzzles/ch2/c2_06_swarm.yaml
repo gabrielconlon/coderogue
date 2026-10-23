@@ -1,0 +1,100 @@
+id: ch2-06
+title: Sort the Swarm
+chapter: 2
+order: 6
+optional: false
+concepts: [loops, conditionals, stdin-until-eof, counting]
+vim_skill: "dd (cleave a whole line)"
+lore: |
+  A swarm boils out of the reeds. Sable's spyglass reads each bug's size,
+  one per line, but the Mire's lanterns can only spare light for the big
+  ones. Name every bug larger than 10, then report how many there were.
+  Bugs of exactly 10 are "medium", says Sable, "and medium is not big."
+limits: {timeout_s: 2, max_stdout_kb: 16}
+languages:
+  python:
+    starter: |
+      import sys
+
+      big = 0
+      for line in sys.stdin:
+          size = int(line)
+          # Your spell here: print the size if it is a big bug,
+          # and count it.
+
+      print("Big bugs:", big)
+    hints:
+      - &swarm_h1 "You already visit every bug, one per lap of the loop. On each lap, ask one question: is this bug bigger than 10?"
+      - "Inside the loop, use `if size > 10:` and indent the lines that should only happen for big bugs. Two things happen: print it, and add 1 to big."
+      - "if size > 10:\n        print(size)\n        big = big + ___"
+    solution: |
+      import sys
+
+      big = 0
+      for line in sys.stdin:
+          size = int(line)
+          if size > 10:
+              print(size)
+              big = big + 1
+
+      print("Big bugs:", big)
+  bash:
+    starter: |
+      big=0
+      while read -r size; do
+        # Your spell here: echo the size if it is a big bug,
+        # and count it.
+        :
+      done
+      echo "Big bugs: $big"
+    hints:
+      - *swarm_h1
+      - "In bash, compare numbers with [ \"$size\" -gt 10 ]. -gt means 'greater than'. Wrap it in if ...; then ... fi."
+      - "if [ \"$size\" -gt 10 ]; then\n    echo \"$size\"\n    big=$((big + ___))\n  fi"
+    solution: |
+      big=0
+      while read -r size; do
+        if [ "$size" -gt 10 ]; then
+          echo "$size"
+          big=$((big + 1))
+        fi
+      done
+      echo "Big bugs: $big"
+  powershell:
+    starter: |
+      $big = 0
+      while (($line = [Console]::In.ReadLine()) -ne $null) {
+          $size = [int]$line
+          # Your spell here: print the size if it is a big bug,
+          # and count it.
+      }
+      Write-Output "Big bugs: $big"
+    hints:
+      - *swarm_h1
+      - "In PowerShell, compare numbers with -gt ('greater than'): if ($size -gt 10) { ... }. Inside the braces, two things happen: print it, and add 1 to $big."
+      - "if ($size -gt 10) {\n        Write-Output $size\n        $big = $big + ___\n    }"
+    solution: |
+      $big = 0
+      while (($line = [Console]::In.ReadLine()) -ne $null) {
+          $size = [int]$line
+          if ($size -gt 10) {
+              Write-Output $size
+              $big = $big + 1
+          }
+      }
+      Write-Output "Big bugs: $big"
+tests:
+  - name: "A mixed swarm"
+    stdin: "4\n12\n9\n31\n11\n"
+    expect: {stdout: "12\n31\n11\nBig bugs: 3\n", exit_code: 0}
+  - name: "Two medium bugs (exactly 10 is not big)"
+    stdin: "10\n10\n"
+    expect: {stdout: "Big bugs: 0\n"}
+  - name: "No bugs at all"
+    stdin: ""
+    expect: {stdout: "Big bugs: 0\n"}
+reward:
+  xp: 60
+  items: [lantern_oil]
+  unlocks: []
+  world_effect: "Big bugs in the next room glow and become lockable with v; small ones flee."

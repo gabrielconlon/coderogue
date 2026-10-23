@@ -1,0 +1,307 @@
+id: ch2-b
+title: "Boss: The Ouroboros"
+chapter: 2
+order: 8
+optional: false
+concepts: [loops, conditionals, termination, stdin-until-eof, counting]
+vim_skill: "v + dd + u in combat"
+lore: |
+  At the heart of the Looping Mire, a worm eats its own tail and regrows
+  every lap, so no amount of damage will ever finish it. Three loop-stones
+  ring the arena. Lock on to a glowing segment, cleave it, and use each
+  stone to write the spell that breaks the circle: find the weakest segment,
+  mend a loop that never ends, and count who survives the blow.
+limits: {timeout_s: 2, max_stdout_kb: 16}
+phases:
+  - title: "Stone A: The Weakest Segment"
+    lore: |
+      Each segment of the worm reports its HP, one per line. Find the weakest
+      one and say where it sits in the ring, counting from 1. If two segments
+      tie for weakest, name the first.
+    languages:
+      python:
+        starter: |
+          import sys
+
+          lowest = 999999
+          position = 0
+          count = 0
+          for line in sys.stdin:
+              hp = int(line)
+              count = count + 1
+              if hp ___ lowest:
+                  lowest = hp
+                  position = ___
+
+          print("Weakest:", lowest)
+          print("Position:", position)
+        hints:
+          - &ouro_a_h1 "Keep two notes while you walk the ring: the lowest HP seen so far, and where it was. Update both only when a segment beats the record."
+          - "Count segments as you go. When hp is strictly less than lowest, save hp into lowest and save the current count as the position. Strictly less keeps the first of a tie."
+          - "First blank: <   Second blank: count"
+        solution: |
+          import sys
+
+          lowest = 999999
+          position = 0
+          count = 0
+          for line in sys.stdin:
+              hp = int(line)
+              count = count + 1
+              if hp < lowest:
+                  lowest = hp
+                  position = count
+
+          print("Weakest:", lowest)
+          print("Position:", position)
+      bash:
+        starter: |
+          lowest=999999
+          position=0
+          count=0
+          while read -r hp; do
+            count=$((count + 1))
+            if [ "$hp" ___ "$lowest" ]; then
+              lowest=$hp
+              position=___
+            fi
+          done
+          echo "Weakest: $lowest"
+          echo "Position: $position"
+        hints:
+          - *ouro_a_h1
+          - "Count segments as you go. When hp is strictly less than lowest (-lt in bash), save hp into lowest and the current count as the position. Strictly less keeps the first of a tie."
+          - "First blank: -lt   Second blank: $count"
+        solution: |
+          lowest=999999
+          position=0
+          count=0
+          while read -r hp; do
+            count=$((count + 1))
+            if [ "$hp" -lt "$lowest" ]; then
+              lowest=$hp
+              position=$count
+            fi
+          done
+          echo "Weakest: $lowest"
+          echo "Position: $position"
+      powershell:
+        starter: |
+          $lowest = 999999
+          $position = 0
+          $count = 0
+          while (($line = [Console]::In.ReadLine()) -ne $null) {
+              $hp = [int]$line
+              $count = $count + 1
+              if ($hp ___ $lowest) {
+                  $lowest = $hp
+                  $position = ___
+              }
+          }
+          Write-Output "Weakest: $lowest"
+          Write-Output "Position: $position"
+        hints:
+          - *ouro_a_h1
+          - "Count segments as you go. When $hp is strictly less than $lowest (-lt in PowerShell), save $hp into $lowest and the current count as the position. Strictly less keeps the first of a tie."
+          - "First blank: -lt   Second blank: $count"
+        solution: |
+          $lowest = 999999
+          $position = 0
+          $count = 0
+          while (($line = [Console]::In.ReadLine()) -ne $null) {
+              $hp = [int]$line
+              $count = $count + 1
+              if ($hp -lt $lowest) {
+                  $lowest = $hp
+                  $position = $count
+              }
+          }
+          Write-Output "Weakest: $lowest"
+          Write-Output "Position: $position"
+    tests:
+      - name: "Weakest in the middle"
+        stdin: "9\n4\n12\n"
+        expect: {stdout: "Weakest: 4\nPosition: 2\n", exit_code: 0}
+      - name: "Weakest at the tail"
+        stdin: "30\n25\n18\n7\n"
+        expect: {stdout: "Weakest: 7\nPosition: 4\n"}
+      - name: "A tie names the first"
+        stdin: "5\n8\n5\n"
+        expect: {stdout: "Weakest: 5\nPosition: 1\n"}
+      - name: "A lone segment"
+        stdin: "40\n"
+        expect: {stdout: "Weakest: 40\nPosition: 1\n"}
+  - title: "Stone B: The Endless Loop"
+    lore: |
+      The worm's own loop has no way out: it counts down and never lowers the
+      count. Cast it and the Terminal will drown in numbers. Make the loop
+      terminate so the count really goes from n down to 1, then let the tail
+      go.
+    languages:
+      python:
+        starter: |
+          # n arrives through input(). This loop never ends. Fix it.
+          n = int(input())
+          while n > 0:
+              print(n)
+          print("Tail released.")
+        hints:
+          - &ouro_b_h1 "A while loop only stops when its condition turns false, and nothing in this loop ever changes n. Something inside the loop has to push it toward the exit."
+          - "Add one line inside the loop, after the print, that makes n smaller by 1. Then n reaches 0, the condition n > 0 turns false, and the loop ends."
+          - "n = n - 1   (indented to line up with print(n))"
+        solution: |
+          n = int(input())
+          while n > 0:
+              print(n)
+              n = n - 1
+          print("Tail released.")
+      bash:
+        starter: |
+          # n arrives on stdin. This loop never ends. Fix it.
+          read -r n
+          while [ "$n" -gt 0 ]; do
+            echo "$n"
+          done
+          echo "Tail released."
+        hints:
+          - *ouro_b_h1
+          - "Add one line inside the loop, after the echo, that makes n smaller by 1. Then n reaches 0, the test turns false, and the loop ends."
+          - "n=$((n - 1))   (a line inside the loop, after echo \"$n\")"
+        solution: |
+          read -r n
+          while [ "$n" -gt 0 ]; do
+            echo "$n"
+            n=$((n - 1))
+          done
+          echo "Tail released."
+      powershell:
+        starter: |
+          # n arrives on stdin. This loop never ends. Fix it.
+          $n = [int][Console]::In.ReadLine()
+          while ($n -gt 0) {
+              Write-Output $n
+          }
+          Write-Output "Tail released."
+        hints:
+          - *ouro_b_h1
+          - "Add one line inside the loop, after Write-Output, that makes $n smaller by 1. Then $n reaches 0, the test turns false, and the loop ends."
+          - "$n = $n - 1   (a line inside the braces, after Write-Output $n)"
+        solution: |
+          $n = [int][Console]::In.ReadLine()
+          while ($n -gt 0) {
+              Write-Output $n
+              $n = $n - 1
+          }
+          Write-Output "Tail released."
+    tests:
+      - name: "Count down from four"
+        stdin: "4\n"
+        expect: {stdout: "4\n3\n2\n1\nTail released.\n", exit_code: 0}
+      - name: "A single lap"
+        stdin: "1\n"
+        expect: {stdout: "1\nTail released.\n"}
+      - name: "Nothing to count"
+        stdin: "0\n"
+        expect: {stdout: "Tail released.\n"}
+  - title: "Stone C: Who Survives"
+    lore: |
+      The final blow lands on every segment at once: 7 damage each. Read the
+      HPs, one per line, and print the HP of each segment still standing
+      (above 0) in order, then how many survived. A segment at exactly 0 is
+      gone, and the worm does not argue.
+    languages:
+      python:
+        starter: |
+          import sys
+
+          survivors = 0
+          for line in sys.stdin:
+              hp = int(line) - ___
+              if hp ___ 0:
+                  print(hp)
+                  survivors = survivors + 1
+
+          print("Survivors:", survivors)
+        hints:
+          - &ouro_c_h1 "For each segment: subtract the damage first, then keep it only if what is left is above zero. Count the keepers as you print them."
+          - "Subtract 7 from every line, and test with greater than: a segment at exactly 0 must not survive."
+          - "First blank: 7   Second blank: >"
+        solution: |
+          import sys
+
+          survivors = 0
+          for line in sys.stdin:
+              hp = int(line) - 7
+              if hp > 0:
+                  print(hp)
+                  survivors = survivors + 1
+
+          print("Survivors:", survivors)
+      bash:
+        starter: |
+          survivors=0
+          while read -r line; do
+            hp=$((line - ___))
+            if [ "$hp" ___ 0 ]; then
+              echo "$hp"
+              survivors=$((survivors + 1))
+            fi
+          done
+          echo "Survivors: $survivors"
+        hints:
+          - *ouro_c_h1
+          - "Subtract 7 from every line inside $(( )), and test with -gt (greater than): a segment at exactly 0 must not survive."
+          - "First blank: 7   Second blank: -gt"
+        solution: |
+          survivors=0
+          while read -r line; do
+            hp=$((line - 7))
+            if [ "$hp" -gt 0 ]; then
+              echo "$hp"
+              survivors=$((survivors + 1))
+            fi
+          done
+          echo "Survivors: $survivors"
+      powershell:
+        starter: |
+          $survivors = 0
+          while (($line = [Console]::In.ReadLine()) -ne $null) {
+              $hp = [int]$line - ___
+              if ($hp ___ 0) {
+                  Write-Output $hp
+                  $survivors = $survivors + 1
+              }
+          }
+          Write-Output "Survivors: $survivors"
+        hints:
+          - *ouro_c_h1
+          - "Subtract 7 from every line after converting it with [int], and test with -gt (greater than): a segment at exactly 0 must not survive."
+          - "First blank: 7   Second blank: -gt"
+        solution: |
+          $survivors = 0
+          while (($line = [Console]::In.ReadLine()) -ne $null) {
+              $hp = [int]$line - 7
+              if ($hp -gt 0) {
+                  Write-Output $hp
+                  $survivors = $survivors + 1
+              }
+          }
+          Write-Output "Survivors: $survivors"
+    tests:
+      - name: "A mixed ring"
+        stdin: "20\n5\n9\n7\n8\n"
+        expect: {stdout: "13\n2\n1\nSurvivors: 3\n", exit_code: 0}
+      - name: "Exactly 7 does not survive"
+        stdin: "7\n7\n"
+        expect: {stdout: "Survivors: 0\n"}
+      - name: "An empty ring"
+        stdin: ""
+        expect: {stdout: "Survivors: 0\n"}
+      - name: "Everyone lives"
+        stdin: "30\n12\n"
+        expect: {stdout: "23\n5\nSurvivors: 2\n"}
+reward:
+  xp: 150
+  items: [ouroboros_scale]
+  unlocks: []
+  world_effect: "The Ouroboros releases its tail and unwinds into a sleepy river serpent. The Mire drains, and the looping travelers walk out, one carrying Dex's key to the Grand Directory."

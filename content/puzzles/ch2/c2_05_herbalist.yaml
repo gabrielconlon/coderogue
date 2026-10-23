@@ -1,0 +1,84 @@
+id: ch2-05
+title: The Herbalist's List
+chapter: 2
+order: 5
+optional: false
+concepts: [lists, arrays, index, length, loops]
+vim_skill: "3j and 2dd (counts with motions and deletes)"
+lore: |
+  The Mire's herbalist keeps her stock in a single long list, and the damp
+  has smudged the labels. She needs a numbered inventory, the number of
+  herbs on the shelf, and the name of the last one, which is always the
+  freshest. "Computers count from zero," she mutters. "Customers do not."
+limits: {timeout_s: 2, max_stdout_kb: 16}
+languages:
+  python:
+    starter: |
+      herbs = ["sage", "rue", "mint", "thyme"]
+      # Print a numbered list: "1. sage", "2. rue", and so on.
+      for i in range(___(herbs)):
+          print(f"{i + 1}. {herbs[i]}")
+      print("Herbs:", len(herbs))
+      print("Last:", herbs[___])
+    hints:
+      - &herbs_h1 "Three jobs on one list: walk every herb with its number, report how many there are, and name the last one. Positions start at 0, but the printed numbers start at 1."
+      - "len(herbs) is how many herbs there are, so range(len(herbs)) visits every position. In Python the index -1 means the last item."
+      - "First blank: len   Second blank: -1"
+    solution: |
+      herbs = ["sage", "rue", "mint", "thyme"]
+      for i in range(len(herbs)):
+          print(f"{i + 1}. {herbs[i]}")
+      print("Herbs:", len(herbs))
+      print("Last:", herbs[-1])
+  bash:
+    starter: |
+      herbs=(sage rue mint thyme)
+      count=${#___[@]}
+      # Print a numbered list: "1. sage", "2. rue", and so on.
+      for ((i=0; i<count; i++)); do
+        echo "$((i + 1)). ${herbs[$i]}"
+      done
+      echo "Herbs: $count"
+      echo "Last: ${herbs[$((count - ___))]}"
+    hints:
+      - *herbs_h1
+      - "${#herbs[@]} is how many items the array holds. The last item sits at position count - 1, so count - 1 inside $(( )) finds it."
+      - "First blank: herbs   Second blank: 1"
+    solution: |
+      herbs=(sage rue mint thyme)
+      count=${#herbs[@]}
+      for ((i=0; i<count; i++)); do
+        echo "$((i + 1)). ${herbs[$i]}"
+      done
+      echo "Herbs: $count"
+      echo "Last: ${herbs[$((count - 1))]}"
+  powershell:
+    starter: |
+      $herbs = @('sage', 'rue', 'mint', 'thyme')
+      $count = $herbs.___
+      # Print a numbered list: "1. sage", "2. rue", and so on.
+      for ($i = 0; $i -lt $count; $i++) {
+          Write-Output "$($i + 1). $($herbs[$i])"
+      }
+      Write-Output "Herbs: $count"
+      Write-Output "Last: $($herbs[___])"
+    hints:
+      - *herbs_h1
+      - "$herbs.Count is how many items the array holds. In PowerShell the index -1 means the last item."
+      - "First blank: Count   Second blank: -1"
+    solution: |
+      $herbs = @('sage', 'rue', 'mint', 'thyme')
+      $count = $herbs.Count
+      for ($i = 0; $i -lt $count; $i++) {
+          Write-Output "$($i + 1). $($herbs[$i])"
+      }
+      Write-Output "Herbs: $count"
+      Write-Output "Last: $($herbs[-1])"
+tests:
+  - name: "The herbalist's shelf"
+    expect: {stdout: "1. sage\n2. rue\n3. mint\n4. thyme\nHerbs: 4\nLast: thyme\n", exit_code: 0}
+reward:
+  xp: 60
+  items: [herb_pouch]
+  unlocks: []
+  world_effect: "Labels on the herbalist's jars sharpen, and the swamp tea she hands you is almost drinkable."

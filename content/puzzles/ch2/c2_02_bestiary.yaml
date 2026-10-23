@@ -1,0 +1,103 @@
+id: ch2-02
+title: Sable's Bestiary
+chapter: 2
+order: 2
+optional: true
+concepts: [elif, comparison, boundaries, input]
+vim_skill: "v lock-on (hold v, cycle targets with hjkl)"
+lore: |
+  Ranger Sable keeps a bestiary nailed to the lodge wall, and half of it is
+  scribbled out. Every creature gets one of three labels by its HP: a brute
+  has 50 or more, a skirmisher has 20 or more, and anything weaker is a pest.
+  "Check the biggest first," Sable says, polishing the spyglass. "Otherwise
+  everything is a pest."
+limits: {timeout_s: 2, max_stdout_kb: 16}
+languages:
+  python:
+    starter: |
+      # The creature's HP arrives through input().
+      hp = int(input())
+      if hp >= 50:
+          print("brute")
+      ___ hp >= 20:
+          print("skirmisher")
+      ___:
+          print("pest")
+    hints:
+      - &bestiary_h1 "Three labels means three branches, checked from the top down. The first test that is true wins, and the rest are skipped."
+      - "After the first if, use elif for the in-between case and else for everything left over. Python's elif is short for 'else if'."
+      - "First blank: elif   Second blank: else"
+    solution: |
+      hp = int(input())
+      if hp >= 50:
+          print("brute")
+      elif hp >= 20:
+          print("skirmisher")
+      else:
+          print("pest")
+  bash:
+    starter: |
+      # The creature's HP arrives on stdin.
+      read -r hp
+      if [ "$hp" -ge 50 ]; then
+        echo "brute"
+      ___ [ "$hp" -ge 20 ]; then
+        echo "skirmisher"
+      ___
+        echo "pest"
+      fi
+    hints:
+      - *bestiary_h1
+      - "In bash the middle branch is spelled elif ...; then and the last is just else. The whole chain still closes with one fi."
+      - "First blank: elif   Second blank: else"
+    solution: |
+      read -r hp
+      if [ "$hp" -ge 50 ]; then
+        echo "brute"
+      elif [ "$hp" -ge 20 ]; then
+        echo "skirmisher"
+      else
+        echo "pest"
+      fi
+  powershell:
+    starter: |
+      # The creature's HP arrives on stdin.
+      $hp = [int][Console]::In.ReadLine()
+      if ($hp -ge 50) {
+          Write-Output "brute"
+      } ___ ($hp -ge 20) {
+          Write-Output "skirmisher"
+      } ___ {
+          Write-Output "pest"
+      }
+    hints:
+      - *bestiary_h1
+      - "PowerShell spells the middle branch elseif (one word) and the last branch else. Each one closes the previous block with } first."
+      - "First blank: elseif   Second blank: else"
+    solution: |
+      $hp = [int][Console]::In.ReadLine()
+      if ($hp -ge 50) {
+          Write-Output "brute"
+      } elseif ($hp -ge 20) {
+          Write-Output "skirmisher"
+      } else {
+          Write-Output "pest"
+      }
+tests:
+  - name: "Exactly 50 is a brute"
+    stdin: "50\n"
+    expect: {stdout: "brute\n", exit_code: 0}
+  - name: "49 is only a skirmisher"
+    stdin: "49\n"
+    expect: {stdout: "skirmisher\n"}
+  - name: "Exactly 20 is a skirmisher"
+    stdin: "20\n"
+    expect: {stdout: "skirmisher\n"}
+  - name: "19 is a pest"
+    stdin: "19\n"
+    expect: {stdout: "pest\n"}
+reward:
+  xp: 50
+  items: [bestiary_page]
+  unlocks: []
+  world_effect: "The scribbled-out pages of the bestiary fill in, and Sable hands over the Spyglass."
