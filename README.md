@@ -1,29 +1,35 @@
 # CodeRogue
 
-**A top-down action adventure that teaches you to code. Walk with VIM keys. Cast spells in Python, bash, or PowerShell.**
+**An action adventure that teaches you to actually code. Move with VIM keys. Solve the world's problems in Python, bash, or PowerShell. No autocomplete, no assistant, just you and a blinking cursor.**
 
 ![CodeRogue title screen](docs/screenshots/title.png)
 
-The kingdom of Shellmarch is written in the Source, and a grey corruption called the Null is emptying it line by line. Signs go blank, bells forget how to count, and your teacher Pell has been reduced to a single word: `None`. You are Wren, an apprentice copyist with the home row under your fingers and a reformed bug named Moth on your shoulder. Walk to the Terminal, and write the world back.
+It has never been easier to get code written for you, and never easier to lose the ability to write it yourself. CodeRogue is for people who want the basics in their hands: what a variable is, how a loop ends, why a file has a newline at the end, what `git diff` is telling you. The kind of thing you should not need to ask anyone for, including a machine.
 
-Every key you learn for the world also works in the editor. `x` kills a bug and deletes a character. `dd` cleaves a row of enemies and deletes a line. The altars where you write spells are real code, run by a real interpreter, and your output appears in the world: on the signpost, from the bell, in the ferryman's mouth.
+So it is a game. The kingdom of Shellmarch is written in the Source, and a corruption called the Null is emptying it line by line. Your teacher has been reduced to a single word, `None`. You are Wren, an apprentice with the home row under your fingers, and the only way forward is to write.
+
+Three ideas hold it together:
+
+- **Every key you learn for the world works in the editor.** `hjkl` walks and moves the cursor. `x` kills a bug and deletes a character. `dd` cleaves a row of enemies and deletes a line. By the end you know VIM because you played with it for hours, not because you memorised a cheat sheet.
+- **The puzzles are real programs, run by a real interpreter.** You type the code. If it is wrong, you see exactly what it printed next to what was expected, and the error in plain words. Nothing is auto-filled.
+- **It is a course in disguise.** The order is the order of an intro programming class: output, variables, arithmetic, input, conditionals, loops, lists, dictionaries, functions, files, pipelines. Saving the game is a git commit, so by Chapter 2 you are reading `git log` and `git checkout` for real.
 
 ## What it looks like
 
 | | |
 |---|---|
 | ![Waking in the scriptorium](docs/screenshots/wakeup.png) | ![Little Tilde village](docs/screenshots/village.png) |
-| *Wake up, learn `h j k l`, and go find the ink.* | *Bouncing arrows show where to go. Moth follows.* |
+| *The first thing you learn is to walk with `h j k l`. The game never tells you to use the mouse, because there is nothing to click.* | *An overworld in the spirit of the Zelda games. Explore, fight bugs, find altars.* |
 | ![Writing a spell at an altar](docs/screenshots/altar.png) | ![The altar lights](docs/screenshots/altar-solved.png) |
-| *Press `i` at an altar: the world freezes and a modal editor opens. Pick Python, bash, or PowerShell per puzzle.* | *Cast with `:w`. Pass, and the altar lights. Fail, and you get a precise diff and a kind translation of the error.* |
+| *An altar is a coding problem. Press `i`, write the program in Python, bash, or PowerShell, and `:w` runs it. This is `print`. It gets harder.* | *Pass and the altar lights. Fail and you get the diff, the error in plain words, and three rungs of hints, never the answer.* |
 | ![Echo Vale](docs/screenshots/echo-vale.png) | ![Grubble, the Typo King](docs/screenshots/grubble.png) |
-| *Echo Vale, where the Null has eaten every name.* | *Chapter bosses are fights and coding challenges at once.* |
+| *Echo Vale, where the Null has eaten every name. Each chapter is one unit of the course.* | *Chapter bosses are a fight and a multi-part coding challenge at once. Grubble is defeated by debugging his proclamation and computing a census.* |
 
 ![Controls overlay](docs/screenshots/help.png)
 
 ## What you learn
 
-CodeRogue follows the order of an intro programming course, with a story wrapped around it.
+The chapters follow an intro programming course. The story is there so you keep going.
 
 | Chapter | Where | Concepts | New keys |
 |---|---|---|---|
@@ -32,9 +38,9 @@ CodeRogue follows the order of an intro programming course, with a story wrapped
 | 2 | Branchwood and the Looping Mire | if/else, while, for, lists, filtering input | `v` counts `dd` `u` |
 | 3 | The Grand Directory | dictionaries, functions, reading and writing files, pipelines | `yy p` `/ n` marks |
 
-Every puzzle has a Python variant, a bash variant, and a PowerShell variant that teach the same idea, so you can mix and match or solve one twice for a Bilingual star. Hints come in three rungs, coding is never timed, and you can always skip and come back.
+Every puzzle has a Python, a bash, and a PowerShell variant teaching the same idea. Pick one per puzzle, or solve it twice. Hints come in three rungs and the third is still not the answer. Coding is never timed. You can skip and come back, but the altar stays dark until you do it yourself.
 
-Saving is a git commit. Stand at a waystone (the signposts) and set a seal, and the game commits your progress and your spells into a local repository it calls the Ledger. By Chapter 2 you are reading `git log`, `git diff`, and `git checkout` to undo what the Null did.
+Saving is a git commit. Set a seal at a waystone, or type `:save`, and the game commits your progress and your programs into a local repository it calls the Ledger. When the Null eats your work in Chapter 2, you get it back with `git log`, `git diff`, and `git checkout`, with the real commands on screen.
 
 ## Install and run
 
