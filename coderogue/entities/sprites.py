@@ -49,3 +49,27 @@ def sheet_tile(tile_id: int, sheet: tuple[str, ...] = DUNGEON_SHEET) -> pygame.S
             surf = img.subsurface(pygame.Rect(col * TILE, row * TILE, TILE, TILE)).copy()
         _cache[key] = surf
     return surf
+
+
+_sheet_cache: dict[tuple[Path, int], list[pygame.Surface]] = {}
+
+
+def load_sheet(path: Path, frame_size: int = TILE) -> list[pygame.Surface]:
+    """Split a horizontal strip of ``frame_size`` square frames (nearest-neighbour, no
+    scaling) into surfaces. Cached; a missing file yields one magenta placeholder frame."""
+    from coderogue.world.tilemap import load_image
+
+    key = (Path(path), frame_size)
+    frames = _sheet_cache.get(key)
+    if frames is None:
+        if not Path(path).exists():
+            frames = [_placeholder(0)]
+        else:
+            img = load_image(Path(path))
+            count = max(1, img.get_width() // frame_size)
+            frames = [
+                img.subsurface(pygame.Rect(i * frame_size, 0, frame_size, frame_size)).copy()
+                for i in range(count)
+            ]
+        _sheet_cache[key] = frames
+    return frames

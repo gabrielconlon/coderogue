@@ -6,6 +6,9 @@ Supported subset (see ``content/maps/README.md``):
 * tile layers with CSV/array ``data`` (no base64/compression), optionally inside groups
 * tilesets embedded in the map or referenced by ``source`` (a ``.tsj`` JSON tileset);
   ``image`` paths are resolved relative to the file that declares them
+* water: every non-empty cell of a tile layer named ``water`` (or of any tile layer with
+  a truthy ``water`` custom property) is listed in :attr:`MapData.water`; the renderer tints
+  those cells and the collision grid treats them as solid
 * object layers; objects keep ``type`` (or Tiled 1.9's ``class``), ``name`` and custom
   ``properties`` flattened into a dict
 """
@@ -106,6 +109,8 @@ class MapData:
     layer_order: list[str]
     objects: list[MapObject]
     properties: dict[str, Any] = field(default_factory=dict)
+    water: set[tuple[int, int]] = field(default_factory=set)
+    """Tile coords ``(tx, ty)`` of water cells (see :func:`water_cells`)."""
 
     @property
     def pixel_size(self) -> tuple[int, int]:
@@ -134,6 +139,26 @@ class MapData:
             if o.type == type_:
                 return o
         return None
+
+
+WATER_LAYER = "water"
+
+
+def is_water_layer(layer: TileLayer) -> bool:
+    """True for a layer named ``water`` or one carrying a truthy ``water`` property."""
+    return layer.name == WATER_LAYER or bool(layer.properties.get(WATER_LAYER))
+
+
+def water_cells(layers: dict[str, TileLayer]) -> set[tuple[int, int]]:
+    """Tile coords of every non-empty cell on a water layer."""
+    cells: set[tuple[int, int]] = set()
+    for layer in layers.values():
+        if not is_water_layer(layer):
+            continue
+        for i, gid in enumerate(layer.data):
+            if gid:
+                cells.add((i % layer.width, i // layer.width))
+    return cells
 
 
 def _properties(raw: list[dict[str, Any]] | None) -> dict[str, Any]:
@@ -265,6 +290,7 @@ def parse_map(raw: dict[str, Any], path: Path) -> MapData:
         layer_order=order,
         objects=objects,
         properties=_properties(raw.get("properties")),
+        water=water_cells(layers),
     )
 
 

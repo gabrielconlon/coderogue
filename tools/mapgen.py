@@ -18,6 +18,8 @@ Source format (see ``content/maps/README.md``, "Authoring with mapgen")::
                                     # bare ids reuse the previous sheet
       T ground=town:0 wall=town:16  # wall = walls layer (solid)
       D ground=town:25 decor=town:85 above=...
+      ~ ground=dungeon:0 wall=dungeon:0,12 water=1   # water=1 marks water (tinted, solid);
+                                    # water=sheet:id draws a tile on a `water` layer too
     grid:
     TTTT.....
     objects:
@@ -49,9 +51,10 @@ MAPS_DIR = REPO_ROOT / "content" / "maps"
 SRC_DIR = MAPS_DIR / "src"
 
 TILE_SIZE = 16
-LAYERS = ("ground", "walls", "decor", "above")
-LEGEND_KEYS = {"ground": "ground", "wall": "walls", "walls": "walls", "decor": "decor",
-               "above": "above"}
+LAYERS = ("ground", "walls", "water", "decor", "above")
+LEGEND_KEYS = {"ground": "ground", "wall": "walls", "walls": "walls", "water": "water",
+               "decor": "decor", "above": "above"}
+WATER_FLAGS = ("1", "true")  # ``water=1``: mark the cell as water without a tile of its own
 
 
 @dataclass(frozen=True)
@@ -158,6 +161,9 @@ def parse_source(text: str, path: Path) -> MapSource:
                     keys = ", ".join(LEGEND_KEYS)
                     raise _err(path, lineno, f"bad legend token {tok!r} (keys: {keys})")
                 refs: list[tuple[str, int]] = []
+                if LEGEND_KEYS[key] == "water" and value in WATER_FLAGS:
+                    entry["water"] = refs  # empty = marker only
+                    continue
                 for r in value.split(","):  # a bare id reuses the previous ref's sheet
                     prev = refs[-1][0] if refs else None
                     refs.append(_parse_tile_ref(r, src.tilesets, path, lineno, prev))
@@ -273,32 +279,42 @@ def build_map(src: MapSource) -> dict[str, Any]:
         })
         gid += sheet.tilecount
     data: dict[str, list[int]] = {name: [] for name in LAYERS}
+    water_drawn = False  # any cell with a real water tile (else the layer is a hidden mask)
     for row in src.grid:
         for ch in row:
             entry = src.legend[ch]
             for layer in LAYERS:
                 choices = entry.get(layer)
+                if layer == "water" and choices is not None and not choices:
+                    # marker: repeat the cell's top tile so the layer is harmless if shown
+                    data[layer].append(data["walls"][-1] or data["ground"][-1] or 1)
+                    continue
                 if not choices:
                     data[layer].append(0)
                     continue
+                if layer == "water":
+                    water_drawn = True
                 sheet, tid = choices[0] if len(choices) == 1 else rng.choice(choices)
                 data[layer].append(firstgids[sheet] + tid)
     layers: list[dict[str, Any]] = []
     for layer in LAYERS:
-        if layer in ("decor", "above") and not any(data[layer]):
+        if layer in ("water", "decor", "above") and not any(data[layer]):
             continue
-        layers.append({
+        tile_layer: dict[str, Any] = {
             "data": data[layer],
             "height": height,
             "id": len(layers) + 1,
             "name": layer,
             "opacity": 1,
             "type": "tilelayer",
-            "visible": True,
+            "visible": water_drawn if layer == "water" else True,
             "width": width,
             "x": 0,
             "y": 0,
-        })
+        }
+        if layer == "water":
+            tile_layer["properties"] = [{"name": "water", "type": "bool", "value": True}]
+        layers.append(tile_layer)
     objects = build_objects(src)
     layers.append({
         "draworder": "topdown",

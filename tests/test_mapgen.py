@@ -151,6 +151,7 @@ def test_objects_sit_on_walkable_tiles(name: str) -> None:
             continue
         tx, ty = int(obj.x) // 16, int(obj.y) // 16
         assert walls.gid_at(tx, ty) == 0, f"{name}: {obj.type} {obj.name!r} is inside a wall"
+        assert (tx, ty) not in data.water, f"{name}: {obj.type} {obj.name!r} is in water"
 
 
 @pytest.mark.parametrize("name", STORY_MAPS)

@@ -12,7 +12,7 @@ legend:
   , ground=town:25
   T ground=town:0 wall=town:16,16,16,4,28
   b ground=town:0 wall=town:5
-  ~ ground=dungeon:0 wall=dungeon:0,0,0,12
+  ~ ground=dungeon:0 wall=dungeon:0,0,0,12 water=1
   - ground=town:0 wall=town:81
   | ground=town:0 wall=town:59
   1 ground=town:96

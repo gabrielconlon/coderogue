@@ -33,6 +33,7 @@ DATA = (
     ("content", "content"),
     ("assets/fonts", "assets/fonts"),
     ("assets/kenney", "assets/kenney"),
+    ("assets/sprites", "assets/sprites"),
 )
 #: pygame-ce ships its own PyInstaller hook; yaml's C loader is optional, so name it.
 HIDDEN_IMPORTS = ["yaml", "pygame.freetype"]

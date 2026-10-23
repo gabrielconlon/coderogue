@@ -22,7 +22,7 @@ legend:
   x ground=dungeon:48,48,42,42,49,24
   r ground=dungeon:42 wall=dungeon:24,12
   b ground=dungeon:42 wall=dungeon:29
-  ~ ground=dungeon:0 wall=dungeon:0,0,0,12
+  ~ ground=dungeon:0 wall=dungeon:0,0,0,12 water=1
   = ground=dungeon:37
 grid:
 ########################################D#######

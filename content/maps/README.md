@@ -32,6 +32,7 @@ Tile layers are drawn in Tiled order, under the characters:
 |---|---|
 | `ground` | Floor. Never solid. |
 | `walls` | **Every non-empty tile here is solid.** Collision is built only from this layer. |
+| `water` | Optional. **Every non-empty tile here is water**: solid, and tinted blue-teal with a slow two-frame ripple (drawn after ground/walls, before `decor`). May be hidden (a mask); any tile layer with a `water` bool property set to true counts too. |
 | `decor` | Optional. Non-solid details (rugs, cracks, bones). |
 | `above` | Optional. Drawn *over* characters (archways, tree canopies). Not solid. |
 
@@ -114,7 +115,8 @@ seed: 3                          # optional; random picks default to crc32(name)
 legend:
   . ground=town:0,0,0,1,2        # comma list = seeded random pick per cell
   T ground=town:0 wall=town:16,4 # wall= goes on the solid `walls` layer
-  ~ ground=dungeon:0 wall=dungeon:0,12   # bare ids reuse the previous sheet
+  ~ ground=dungeon:0 wall=dungeon:0,12 water=1  # bare ids reuse the previous sheet;
+                                 # water=1 marks the cell as water (tinted, solid)
   D ground=town:25 decor=town:85 # decor= / above= for the optional layers
 grid:
 TTTTTDTTTT                       # one char per tile; rows must be equal width
@@ -134,5 +136,11 @@ Conventions used by the story maps:
 - A door that must stay shut until a puzzle is solved also needs the far side to be
   physically unreachable (water, a broken bridge span, a wall); the door teleports.
 - NPC `tile`/enemy `tile` are Tiny Dungeon ids unless the object sets `sheet=town`.
+- Water: add `water=1` to a legend entry to mark its cells as water. mapgen emits a hidden
+  `water` mask layer (each cell repeats its own top tile), the loader lists those cells in
+  `MapData.water`, and the renderer tints them and makes them solid. `water=sheet:id[,id]`
+  instead puts a real tile on a visible `water` layer (drawn above `walls`). Keep a `wall=`
+  on water cells anyway so the map still reads as blocked in Tiled. Bridges and word-stones
+  (`=`, `_`) are plain ground and stay walkable.
 - `tests/test_mapgen.py` checks door targets and spawns, altar puzzle ids, NPC dialogue
   keys, enemy kinds, that objects are not inside walls, and that `--check` is clean.
