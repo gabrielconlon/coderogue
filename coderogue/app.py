@@ -18,7 +18,7 @@ UPDATE_HZ = 60
 FIXED_DT = 1.0 / UPDATE_HZ
 MAX_FRAME_TIME = 0.25  # clamp after stalls (window drag, breakpoint) to avoid a spiral
 MAX_STEPS_PER_FRAME = 5
-DEFAULT_MAP = ("content", "maps", "test_room.tmj")
+DEFAULT_MAP = ("content", "maps", "little_tilde_scriptorium.tmj")
 TITLE = "CodeRogue"
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
