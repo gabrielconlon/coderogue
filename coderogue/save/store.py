@@ -41,6 +41,9 @@ DEFAULT_SLOT = "slot1"
 LANG_EXT: dict[str, str] = {"python": "py", "bash": "sh", "powershell": "ps1"}
 #: A boss phase draft is keyed ``<puzzle_id>#<phase>``; on disk the ``#`` becomes this.
 PHASE_FILE_SEP = "__"
+#: A spell file stem that is a boss phase: boss puzzle ids end in ``-b`` (``ch1-b__2``). Only
+#: these get ``__`` turned back into ``#``, so an ordinary id containing ``__`` survives.
+_PHASE_STEM_RE = re.compile(r"^(.+-b)" + PHASE_FILE_SEP + r"([^_]+)$")
 _SLOT_RE = re.compile(r"^[A-Za-z0-9_-]{1,32}$")
 
 
@@ -195,6 +198,9 @@ class SaveReceipt:
     saved_at: str
     message: str
     sha: str | None = None
+    #: Why the Ledger did not seal (git's message, first line), or None. Set only when the
+    #: Ledger is on and git is installed but the commit failed (e.g. a locked index).
+    error: str | None = None
 
 
 @dataclass(frozen=True)
@@ -244,10 +250,14 @@ class SaveStore:
         atomic_write_text(path, json.dumps(state.to_json(), indent=2, sort_keys=True) + "\n")
         msg = message or f"Sealed at {state.waystone or state.area_name or 'the road'}"
         sha = None
+        error = None
         ledger = self.ledger(slot)
         if ledger.available:
             sha = ledger.commit(msg)
-        return SaveReceipt(slot, path, state.saved_at, msg, sha)
+            if sha is None:
+                reason = (ledger.last_error or "").strip().splitlines()
+                error = reason[0] if reason else "the Ledger could not set a seal"
+        return SaveReceipt(slot, path, state.saved_at, msg, sha, error)
 
     def load(self, slot: str) -> SaveState | None:
         """Read ``slot``; None if it does not exist or is unreadable."""
@@ -329,7 +339,9 @@ class SaveStore:
             if not path.is_file() or path.name.startswith(".") or "." not in path.name:
                 continue
             pid, _, ext = path.name.rpartition(".")
-            pid = pid.replace(PHASE_FILE_SEP, "#")
+            m = _PHASE_STEM_RE.match(pid)
+            if m:
+                pid = f"{m.group(1)}#{m.group(2)}"
             try:
                 source = path.read_text(encoding="utf-8")
             except (OSError, UnicodeDecodeError):

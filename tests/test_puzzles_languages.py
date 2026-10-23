@@ -156,3 +156,38 @@ def test_unknown_errors_are_not_translated() -> None:
     for lang in registry().values():
         assert lang.translate_error("") is None
         assert lang.translate_error("something entirely new happened") is None
+
+
+def test_windows_bash_skips_wsl_launcher_and_prefers_git_bash(monkeypatch, tmp_path) -> None:  # type: ignore[no-untyped-def]
+    import os
+    import shutil as _shutil
+
+    from coderogue.languages import bash as bashmod
+
+    def touch(*parts: str) -> str:
+        p = tmp_path.joinpath(*parts)
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text("")
+        return str(p)
+
+    wsl = touch("Windows", "System32", "bash.exe")
+    pf_usr = touch("PF", "Git", "usr", "bin", "bash.exe")  # only usr\bin exists under PF
+    scoop_bin = touch("scoop", "Git", "bin", "bash.exe")
+    scoop_git = touch("scoop", "Git", "cmd", "git.exe")
+    monkeypatch.setattr(bashmod.sys, "platform", "win32")
+    for var in ("ProgramFiles", "ProgramW6432", "ProgramFiles(x86)", "LOCALAPPDATA"):
+        monkeypatch.delenv(var, raising=False)
+    monkeypatch.setenv("ProgramFiles", str(tmp_path / "PF"))
+    which = {"git": scoop_git, "bash": wsl}
+    monkeypatch.setattr(_shutil, "which", lambda name: which.get(name))
+
+    assert bashmod._bash_candidates() == [pf_usr, scoop_bin]
+    assert bashmod._is_wsl_launcher(r"C:\Windows\System32\bash.exe")
+    assert bashmod._is_wsl_launcher(r"C:\WINDOWS\Sysnative\bash.exe")
+    assert not bashmod._is_wsl_launcher(r"C:\Program Files\Git\bin\bash.exe")
+
+    # Only the WSL launcher on PATH and no Git anywhere: no bash at all.
+    monkeypatch.setenv("ProgramFiles", str(tmp_path / "nowhere"))
+    which.pop("git")
+    assert bashmod._bash_candidates() == []
+    assert os.path.isfile(wsl)

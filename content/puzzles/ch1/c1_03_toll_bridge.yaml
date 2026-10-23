@@ -75,9 +75,9 @@ languages:
       $total = $carts * $price + $fee
       Write-Output $total
     source_checks:
-      - pattern: '\A(?![\s\S]*\b33\b)'
+      - pattern: '(?i)\A(?![\s\S]*\b33\b)'
         message: "The troll can smell a typed-in answer. Let the variables do the math instead of writing the number yourself."
-      - pattern: '\b(carts|price)\b[^\n]*\*[^\n]*\b(carts|price)\b'
+      - pattern: '(?i)\b(carts|price)\b[^\n]*\*[^\n]*\b(carts|price)\b'
         message: "Multiply $carts by $price with *, and add the fee."
 tests:
   - name: "Four carts at seven coins, plus the fee"

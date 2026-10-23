@@ -135,6 +135,8 @@ class Language(ABC):
     script_encoding: str = "utf-8"
     #: Extra seconds added to each test's timeout to cover slow interpreter start-up.
     startup_allowance_s: float = 0.0
+    #: POSIX RLIMIT_NOFILE for a run, or None for the sandbox default (64). .NET needs more.
+    max_open_files: int | None = None
     _cache: LanguageRuntime | None = field(default=None, init=False, repr=False, compare=False)
     _probed: bool = field(default=False, init=False, repr=False, compare=False)
 

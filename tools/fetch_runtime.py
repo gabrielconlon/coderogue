@@ -7,6 +7,9 @@ newest CPython 3.13 ``install_only`` tarball for this platform from the latest r
 checks its SHA-256 against the release, unpacks it and runs ``python -c "print(1)"``.
 
 Usage: python tools/fetch_runtime.py [--force] [--full] [--target TRIPLE] [--release TAG]
+                                     [--allow-unverified]
+
+With no published checksum for the asset the download is refused unless --allow-unverified.
 """
 from __future__ import annotations
 
@@ -157,12 +160,49 @@ def verify(base: Path) -> str:
     return out.stdout.split()[1]
 
 
+def check_checksum(name: str, got: str, want: str | None, allow_unverified: bool) -> None:
+    """Fail closed: a mismatch always aborts, and so does a missing checksum unless allowed."""
+    if want is None:
+        if not allow_unverified:
+            raise SystemExit(f"release lists no checksum for {name}; refusing to install it "
+                             "unverified (pass --allow-unverified to override)")
+        print("  warning: release lists no checksum for this asset; not verified")
+    elif got != want:
+        raise SystemExit(f"checksum mismatch for {name}: {got} != {want}")
+    else:
+        print(f"  sha256 ok {got[:16]}...")
+
+
+def install_dir(src: Path, dest: Path) -> None:
+    """Move ``src`` to ``dest``, replacing it; the old ``dest`` is removed only after the new
+    one is in place (it is put back if the move fails)."""
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    old = None
+    if dest.exists():
+        old = dest.with_name(f".{dest.name}.old")
+        if old.exists():
+            shutil.rmtree(old)
+        dest.rename(old)
+    try:
+        shutil.move(str(src), dest)
+    except BaseException:
+        if old is not None:
+            if dest.exists():
+                shutil.rmtree(dest, ignore_errors=True)
+            old.rename(dest)
+        raise
+    if old is not None:
+        shutil.rmtree(old, ignore_errors=True)
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--force", action="store_true", help="replace an existing runtime/python")
     ap.add_argument("--target", default=None, help="target triple (default: this machine)")
     ap.add_argument("--release", default="latest", help="release tag (default: latest)")
     ap.add_argument("--full", action="store_true", help="keep the whole install (no pruning)")
+    ap.add_argument("--allow-unverified", action="store_true",
+                    help="install even when the release publishes no checksum for the asset")
     args = ap.parse_args(argv)
 
     if DEST.exists() and not args.force:
@@ -180,12 +220,7 @@ def main(argv: list[str] | None = None) -> int:
     with tempfile.TemporaryDirectory(prefix="coderogue-runtime-") as tmp:
         tarball = Path(tmp) / asset["name"]
         got = download(asset["browser_download_url"], tarball)
-        if want is None:
-            print("  warning: release lists no checksum for this asset; not verified")
-        elif got != want:
-            raise SystemExit(f"checksum mismatch for {asset['name']}: {got} != {want}")
-        else:
-            print(f"  sha256 ok {got[:16]}...")
+        check_checksum(asset["name"], got, want, args.allow_unverified)
         unpack = Path(tmp) / "unpack"
         with tarfile.open(tarball) as tf:
             tf.extractall(unpack, filter="data")
@@ -196,10 +231,7 @@ def main(argv: list[str] | None = None) -> int:
             print(f"  pruned {prune(src) >> 20} MB (tests, tkinter, headers, pip)")
         if triple == host_triple():
             verify(src)
-        if DEST.exists():
-            shutil.rmtree(DEST)
-        DEST.parent.mkdir(parents=True, exist_ok=True)
-        shutil.move(str(src), DEST)
+        install_dir(src, DEST)
 
     if triple == host_triple():
         print(f"runtime ready: {DEST} (Python {verify(DEST)})")

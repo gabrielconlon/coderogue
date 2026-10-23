@@ -62,9 +62,9 @@ languages:
       $village = "Murmurby"
       Write-Output "Welcome to $village"
     source_checks:
-      - pattern: '\$village\s*='
+      - pattern: '(?i)\$village\s*='
         message: "The Terminal wants to see a variable called $village carved with =."
-      - pattern: '(?s)\$village\s*=.*\$village\b'
+      - pattern: '(?is)\$village\s*=.*\$village\b'
         message: "The output is right, but the Terminal wants to see $village do the work in the welcome."
 tests:
   - name: "The stone speaks its name"

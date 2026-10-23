@@ -125,3 +125,19 @@ def test_atomic_write_no_temp_left(tmp_path):
     atomic_write_text(target, "x")
     assert os.listdir(target.parent) == ["b.txt"]
     assert Path(target).read_text() == "x"
+
+
+def test_double_underscore_only_maps_back_for_boss_phases(tmp_path, monkeypatch):
+    monkeypatch.setenv("CODEROGUE_HOME", str(tmp_path))
+    store = SaveStore(ledger_enabled=False)
+    drafts = {
+        "ch1-b#2": {"python": "boss\n"},
+        "side__quest": {"bash": "echo side\n"},
+        "ch0-01": {"powershell": "Write-Output 1\n"},
+    }
+    state = SaveState(map="m.tmj", spells={k: dict(v) for k, v in drafts.items()})
+    store.save("slot1", state)
+    assert store.spell_path("slot1", "ch1-b#2", "python").name == "ch1-b__2.py"
+    loaded = store.load("slot1")
+    assert loaded is not None
+    assert loaded.spells == drafts

@@ -26,10 +26,19 @@ Save:   save/store.py (JSON) + save/gitstore.py (optional git commit/tag)
 | `ui/` | HUD, panels, text |
 
 ## Player code sandbox
-`subprocess` with `start_new_session=True` and `os.killpg` on timeout, a fresh temp dir as
-cwd, a scrubbed env (`PATH`, `HOME=$TMP`, `LANG=C.UTF-8`), stdout/stderr caps. Python runs
-as `python -I -S -B main.py`. On POSIX a small launcher sets `RLIMIT_CPU`, `RLIMIT_FSIZE`,
-`RLIMIT_NOFILE`, `RLIMIT_NPROC` then execs. Not a security boundary; documented in README.
+`subprocess` with `start_new_session=True` and `os.killpg` when the script ends (exit,
+timeout or output cap alike), a fresh temp dir as cwd, a scrubbed env (`PATH`, `HOME=$TMP`,
+`LANG=C.UTF-8`, plus a per-run `CODEROGUE_RUN` tag), stdout/stderr caps. Python runs as
+`python -I -S -B main.py`. On POSIX a small launcher sets `RLIMIT_CPU` (ceil(timeout +
+start-up allowance) + 1, so the wall clock fires first; a SIGXCPU death still reads as a
+timeout), `RLIMIT_FSIZE`, `RLIMIT_NOFILE` (64; 256 for PowerShell) and, on Linux only,
+`RLIMIT_NPROC`, then execs. Linux counts `RLIMIT_NPROC` in threads across all of the user's
+processes, so the cap is the user's current thread count + 256 with a floor of 1024: it only
+stops a runaway fork loop, and the wall-clock kill remains the real backstop. Processes that
+escape the group with `setsid` and keep the output pipes open are found by the run tag
+(Linux) or a cwd inside the temp dir (Linux, macOS) and killed; pipes whose reader is still
+blocked are never closed. On Windows the child runs in a kill-on-close Job Object
+(`taskkill /T /F` if one cannot be made). Not a security boundary; documented in README.
 
 ## Adding a language
 Add `coderogue/languages/<name>.py` implementing the `Language` protocol in

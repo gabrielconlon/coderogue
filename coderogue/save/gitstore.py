@@ -6,7 +6,13 @@ command and its output are kept on :attr:`GitLedger.last_command` / :attr:`last_
 the Ledger UI can show exactly what ran.
 
 Nothing here ever raises on git trouble: if git is missing, disabled or fails, methods log
-and return ``None`` / empty values, and the game carries on with plain files.
+and return ``None`` / empty values (the reason is kept on :attr:`GitLedger.last_error`), and
+the game carries on with plain files.
+
+The player's own git setup never leaks in: global and system config are replaced by the null
+device (``GIT_CONFIG_GLOBAL`` / ``GIT_CONFIG_SYSTEM``, git 2.32+), and every command also gets
+``-c`` overrides for hooks, signing and fsmonitor (which older gits honour too). A stale
+``index.lock`` left by a killed git is cleared before each write.
 """
 
 from __future__ import annotations
@@ -16,6 +22,7 @@ import os
 import re
 import shutil
 import subprocess
+import time
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -26,6 +33,12 @@ LEDGER_USER = "Wren"
 LEDGER_EMAIL = "wren@shellmarch.invalid"
 GITIGNORE = "# Written by CodeRogue.\n*.tmp\n.*.tmp\n__pycache__/\n"
 _FIELD_SEP = "\x1f"
+#: An ``index.lock`` older than this is assumed to belong to a git that was killed.
+STALE_LOCK_S = 60.0
+#: Subcommands that write the index or refs (and so need the lock).
+_WRITE_COMMANDS = frozenset({"add", "commit", "tag", "checkout", "init", "config", "reset"})
+#: Empty directory (inside .git) used as ``core.hooksPath`` so no hook ever runs.
+NO_HOOKS_DIR = "coderogue-no-hooks"
 
 
 @dataclass(frozen=True)
@@ -49,10 +62,10 @@ def git_version() -> str | None:
         return None
     try:
         proc = subprocess.run(
-            [exe, "--version"], capture_output=True, text=True, timeout=GIT_TIMEOUT,
-            env=_git_env(),
+            [exe, "--version"], capture_output=True, text=True, encoding="utf-8",
+            errors="replace", timeout=GIT_TIMEOUT, env=_git_env(),
         )
-    except (OSError, subprocess.SubprocessError):
+    except (OSError, subprocess.SubprocessError, ValueError):
         return None
     m = re.search(r"(\d+(?:\.\d+)+)", proc.stdout)
     return m.group(1) if m else None
@@ -75,6 +88,8 @@ def _git_env() -> dict[str, str]:
         GIT_TERMINAL_PROMPT="0",
         LC_ALL="C",
         GIT_CONFIG_NOSYSTEM="1",
+        GIT_CONFIG_GLOBAL=os.devnull,
+        GIT_CONFIG_SYSTEM=os.devnull,
         GIT_AUTHOR_NAME=LEDGER_USER,
         GIT_AUTHOR_EMAIL=LEDGER_EMAIL,
         GIT_COMMITTER_NAME=LEDGER_USER,
@@ -92,6 +107,8 @@ class GitLedger:
         self.last_command: list[str] = []
         self.last_output: str = ""
         self.last_ok: bool = False
+        #: Why the last command failed (git's message), or None after a success.
+        self.last_error: str | None = None
 
     # ---- plumbing ---------------------------------------------------------------------
     @property
@@ -104,26 +121,61 @@ class GitLedger:
         """True when ``repo_dir`` already holds a git repository."""
         return (self.repo_dir / ".git").exists()
 
+    def _overrides(self) -> list[str]:
+        """``-c`` options that shut out hooks, signing and fsmonitor from any config level."""
+        hooks = self.repo_dir / ".git" / NO_HOOKS_DIR
+        try:
+            if hooks.parent.is_dir():
+                hooks.mkdir(exist_ok=True)
+        except OSError:
+            pass
+        return [
+            "-c", f"core.hooksPath={hooks}",
+            "-c", "commit.gpgSign=false",
+            "-c", "tag.gpgSign=false",
+            "-c", "core.fsmonitor=false",
+        ]
+
+    def _clear_stale_lock(self) -> None:
+        """Remove ``.git/index.lock`` if it is older than :data:`STALE_LOCK_S` (a dead git's)."""
+        lock = self.repo_dir / ".git" / "index.lock"
+        try:
+            if time.time() - lock.stat().st_mtime > STALE_LOCK_S:
+                lock.unlink()
+                log.warning("ledger: removed stale %s", lock)
+        except OSError:
+            pass
+
+    def _fail(self, message: str) -> None:
+        self.last_ok = False
+        self.last_output = message
+        self.last_error = message
+
     def _run(self, *args: str) -> str | None:
         """Run ``git <args>`` in the repo. Returns stdout on success, else None (logged)."""
         self.last_command = ["git", *args]
         self.last_ok = False
+        self.last_error = None
         if not self.available:
-            self.last_output = "Ledger unavailable."
+            self._fail("Ledger unavailable.")
             return None
         exe = git_executable()
         assert exe is not None
+        if args and args[0] in _WRITE_COMMANDS:
+            self._clear_stale_lock()
         try:
             proc = subprocess.run(
-                [exe, *args],
+                [exe, *self._overrides(), *args],
                 cwd=self.repo_dir,
                 capture_output=True,
                 text=True,
+                encoding="utf-8",
+                errors="replace",
                 timeout=GIT_TIMEOUT,
                 env=_git_env(),
             )
-        except (OSError, subprocess.SubprocessError) as exc:
-            self.last_output = f"{type(exc).__name__}: {exc}"
+        except (OSError, subprocess.SubprocessError, ValueError) as exc:
+            self._fail(f"{type(exc).__name__}: {exc}")
             log.warning("ledger: %s failed: %s", " ".join(self.last_command), exc)
             return None
         self.last_output = (proc.stdout + proc.stderr).rstrip("\n")
@@ -132,9 +184,18 @@ class GitLedger:
                 "ledger: %s exited %d: %s", " ".join(self.last_command), proc.returncode,
                 proc.stderr.strip(),
             )
+            self.last_error = proc.stderr.strip() or f"git {args[0]} exited {proc.returncode}"
             return None
         self.last_ok = True
         return proc.stdout
+
+    def _reject_option(self, *values: str) -> bool:
+        """True (and the failure recorded) if any ref/name could be read as a git option."""
+        for v in values:
+            if v.startswith("-"):
+                self._fail(f"Refusing {v!r}: names and revisions cannot start with '-'.")
+                return True
+        return False
 
     # ---- public API -------------------------------------------------------------------
     def init(self) -> bool:
@@ -148,6 +209,7 @@ class GitLedger:
                 ignore.write_text(GITIGNORE, encoding="utf-8")
         except OSError as exc:
             log.warning("ledger: cannot prepare %s: %s", self.repo_dir, exc)
+            self._fail(f"cannot prepare {self.repo_dir}: {exc}")
             return False
         if not self.initialized and self._run("init", "-q") is None:
             return False
@@ -157,8 +219,10 @@ class GitLedger:
         return ok
 
     def commit(self, message: str) -> str | None:
-        """Stage everything and commit (empty commits allowed). Returns the short sha."""
+        """Stage everything and commit (empty commits allowed). Returns the short sha, or None
+        with the reason on :attr:`last_error`."""
         if not self.available:
+            self._fail("Ledger unavailable.")
             return None
         if not self.initialized and not self.init():
             return None
@@ -174,6 +238,8 @@ class GitLedger:
 
     def tag(self, name: str) -> bool:
         """Point tag ``name`` at HEAD (moved if it already exists)."""
+        if self._reject_option(name):
+            return False
         return self._run("tag", "-f", name) is not None
 
     def tags(self) -> list[str]:
@@ -203,8 +269,12 @@ class GitLedger:
 
     def restore(self, path: str, sha: str = "HEAD") -> bool:
         """Bring ``path`` back as it was at ``sha`` (``git checkout <sha> -- <path>``)."""
+        if self._reject_option(sha):
+            return False
         return self._run("checkout", sha, "--", path) is not None
 
     def show_file(self, path: str, sha: str) -> str:
         """Contents of ``path`` at commit ``sha`` (empty string if unavailable)."""
+        if self._reject_option(sha):
+            return ""
         return self._run("show", f"{sha}:{path}") or ""

@@ -10,7 +10,9 @@ from __future__ import annotations
 import argparse
 import io
 import re
+import shutil
 import sys
+import tempfile
 import urllib.request
 import zipfile
 from pathlib import Path
@@ -51,16 +53,41 @@ def fetch(slug: str, force: bool) -> Path:
     req = urllib.request.Request(url, headers=UA)
     with urllib.request.urlopen(req, timeout=120) as r:
         data = r.read()
-    dest.mkdir(parents=True, exist_ok=True)
-    with zipfile.ZipFile(io.BytesIO(data)) as zf:
-        for info in zf.infolist():
-            # Refuse path traversal in untrusted archives.
-            target = (dest / info.filename).resolve()
-            if not str(target).startswith(str(dest.resolve())):
-                raise RuntimeError(f"unsafe path in zip: {info.filename}")
-        zf.extractall(dest)
+    install_zip(data, dest)
     print(f"  {slug}: {sum(1 for _ in dest.rglob('*') if _.is_file())} files")
     return dest
+
+
+def install_zip(data: bytes, dest: Path) -> None:
+    """Unpack zip ``data`` into ``dest`` atomically.
+
+    Every member must land inside ``dest`` (no ``..`` or absolute paths). The archive is
+    extracted into a temp dir next to ``dest`` and renamed into place only once complete, so
+    an interrupted run never leaves a half pack that later looks "present".
+    """
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    staging = Path(tempfile.mkdtemp(prefix=f".{dest.name}.", dir=dest.parent))
+    try:
+        with zipfile.ZipFile(io.BytesIO(data)) as zf:
+            root = staging.resolve()
+            for info in zf.infolist():
+                # Refuse path traversal in untrusted archives.
+                target = (root / info.filename).resolve()
+                if not target.is_relative_to(root):
+                    raise RuntimeError(f"unsafe path in zip: {info.filename}")
+            zf.extractall(staging)
+        old = None
+        if dest.exists():
+            old = dest.with_name(f".{dest.name}.old")
+            if old.exists():
+                shutil.rmtree(old)
+            dest.rename(old)
+        staging.rename(dest)
+        if old is not None:
+            shutil.rmtree(old, ignore_errors=True)
+    finally:
+        if staging.exists():
+            shutil.rmtree(staging, ignore_errors=True)
 
 
 def main(argv: list[str]) -> int:

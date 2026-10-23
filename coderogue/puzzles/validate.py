@@ -28,6 +28,11 @@ def normalize(s: str) -> str:
     return "\n".join(lines)
 
 
+def _crlf_to_lf(s: str) -> str:
+    """Line endings only: Windows ``\\r\\n`` becomes ``\\n``; spaces and tabs are kept."""
+    return s.replace("\r\n", "\n")
+
+
 def _lines_for(s: str, mode: str) -> list[str]:
     if mode == "exact":
         text = s.replace("\r\n", "\n")
@@ -39,7 +44,7 @@ def _lines_for(s: str, mode: str) -> list[str]:
 def first_diff_line(expected: str, actual: str, mode: str = "normalized") -> int | None:
     """1-based number of the first differing line, or ``None`` if the texts match."""
     if mode == "exact":
-        if expected == actual:
+        if _crlf_to_lf(expected) == _crlf_to_lf(actual):
             return None
     elif normalize(expected) == normalize(actual):
         return None
@@ -139,7 +144,8 @@ class TestOutcome:
 
 def _text_matches(expected: str, actual: str, mode: str) -> bool:
     if mode == "exact":
-        return expected == actual
+        # Exact still forgives Windows line endings, but not trailing spaces or newlines.
+        return _crlf_to_lf(expected) == _crlf_to_lf(actual)
     return normalize(expected) == normalize(actual)
 
 
@@ -190,6 +196,21 @@ def check_test(test: TestCase, result: ExecResult, timeout_s: float | None = Non
     return TestOutcome(True, expected=exp.stdout or exp.stdout_regex or "", kind="ok", **base)
 
 
+_FULL_LINE_COMMENT = re.compile(r"^[ \t]*#.*$", re.MULTILINE)
+
+
+def strip_comment_lines(code: str) -> str:
+    """``code`` with every full-line ``#`` comment blanked (python, bash and PowerShell all use
+    ``#``). Line numbers are kept. Trailing ``x = 1  # note`` comments and PowerShell ``<# #>``
+    blocks are left alone: telling them apart from ``#`` inside strings needs a real parser."""
+    return _FULL_LINE_COMMENT.sub("", code.replace("\r\n", "\n"))
+
+
 def source_checks(code: str, checks: Iterable[SourceCheck]) -> list[str]:
-    """Messages for every source check whose pattern is missing from ``code``."""
-    return [c.message for c in checks if not c.matches(code)]
+    """Messages for every source check whose pattern is missing from ``code``.
+
+    Patterns are matched against the code with full-line comments removed (see
+    :func:`strip_comment_lines`), so a check cannot be satisfied, or tripped, by a comment.
+    """
+    stripped = strip_comment_lines(code)
+    return [c.message for c in checks if not c.matches(stripped)]

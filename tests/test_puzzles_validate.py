@@ -112,3 +112,43 @@ def test_source_checks() -> None:
     assert source_checks('print("Welcome to Murmurby")\n', checks) == [
         "Store the name in a variable called village first."
     ]
+
+
+def test_exact_mode_forgives_crlf_but_not_trailing_whitespace() -> None:
+    t = TestCase("exact", "", Expectation(stdout="a\nb\n"), match="exact")
+    assert check_test(t, _res("a\r\nb\r\n")).passed
+    assert not check_test(t, _res("a \r\nb\r\n")).passed
+    assert not check_test(t, _res("a\r\nb")).passed  # missing final newline still matters
+    assert first_diff_line("a\nb\n", "a\r\nb\r\n", "exact") is None
+    assert first_diff_line("a\nb\n", "a\r\nb", "exact") == 2
+
+
+def test_source_checks_ignore_full_line_comments() -> None:
+    from coderogue.puzzles.validate import strip_comment_lines
+
+    loop = [SourceCheck(r"\b(for|while)\b", "Use a loop.")]
+    # A comment that mentions "for" does not satisfy the check...
+    assert source_checks("# use a for loop here\nprint(10)\n", loop) == ["Use a loop."]
+    assert source_checks("    # for each lantern\necho 10\n", loop) == ["Use a loop."]
+    # ...and a typed answer in a comment does not trip a "no literal" check.
+    no33 = [SourceCheck(r"\A(?![\s\S]*\b33\b)", "No typed answer.")]
+    assert source_checks("# the troll wants 33\nprint(4 * 7 + 5)\n", no33) == []
+    assert source_checks("print(33)\n", no33) == ["No typed answer."]
+    # Trailing comments and #-in-strings are untouched (documented limitation).
+    assert strip_comment_lines('x = "#a"  # c\n#full\n') == 'x = "#a"  # c\n\n'
+
+
+def test_powershell_and_bash_content_checks() -> None:
+    from pathlib import Path
+
+    from coderogue.puzzles import load_all
+
+    specs = load_all(Path(__file__).resolve().parent.parent / "content" / "puzzles")
+    ps_loop = specs["ch2-04"].body_for(None).languages["powershell"].source_checks
+    assert source_checks("FOREACH ($i in 1..$n) { $t += $i }\n", ps_loop) == []
+    ps_inv = specs["ch3-01"].body_for(None).languages["powershell"].source_checks
+    assert source_checks("$Inv = @{}\n", ps_inv) == []
+    bash_inv = specs["ch3-01"].body_for(None).languages["bash"].source_checks
+    assert source_checks("f() {\n  local -A inv\n}\n", bash_inv) == []
+    assert source_checks("declare -A inv\n", bash_inv) == []
+    assert source_checks("# declare -A inv\ninv=()\n", bash_inv) != []

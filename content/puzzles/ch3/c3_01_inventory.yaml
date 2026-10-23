@@ -50,8 +50,8 @@ languages:
       inv[lantern]=2
       echo "${#inv[@]}"
     source_checks:
-      - pattern: 'declare\s+-A\s+inv'
-        message: "The Terminal wants to see the inventory built as an associative array: declare -A inv."
+      - pattern: '\b(declare|local)\s+-A\s+inv\b'
+        message: "The Terminal wants to see the inventory built as an associative array: declare -A inv (or local -A inv inside a function)."
   powershell:
     starter: |
       # A hashtable pairs each key with a value: @{ key = value }
@@ -69,7 +69,7 @@ languages:
       $inv["lantern"] = 2
       Write-Output $inv.Count
     source_checks:
-      - pattern: '\$inv\s*=\s*@\{'
+      - pattern: '(?i)\$inv\s*=\s*@\{'
         message: "The Terminal wants to see the inventory built as a hashtable: $inv = @{ ... }."
 tests:
   - name: "Potions, then the kinds of thing Dex owns"

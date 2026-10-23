@@ -77,7 +77,7 @@ languages:
       }
       Write-Output $total
     source_checks:
-      - pattern: '\b(for|foreach|while)\b'
+      - pattern: '(?i)\b(for|foreach|while)\b'
         message: "The lamplighter wants a loop here, not a formula. Use for (or while) to add the lanterns one at a time."
 tests:
   - name: "Four lanterns"

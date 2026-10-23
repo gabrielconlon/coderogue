@@ -120,3 +120,103 @@ def test_subprocess_error_is_swallowed(tmp_path, monkeypatch):
     assert ledger.commit("x") is None
     assert "OSError" in ledger.last_output or ledger.last_output == ""
     assert ledger_status() == "Ledger: git not found"
+
+
+# ---- review fixes: config isolation, encoding, stale locks, option injection ---------------
+
+def _hostile_home(tmp_path):
+    """A HOME whose global git config runs a hook and demands signed tags/commits."""
+    home = tmp_path / "home"
+    hooks = home / "hooks"
+    hooks.mkdir(parents=True)
+    ran = tmp_path / "hook-ran"
+    for name in ("pre-commit", "post-commit", "commit-msg", "reference-transaction"):
+        hook = hooks / name
+        hook.write_text(f"#!/bin/sh\necho {name} >> '{ran}'\nexit 1\n")
+        hook.chmod(0o755)
+    (home / ".gitconfig").write_text(
+        f"[core]\n\thooksPath = {hooks}\n[commit]\n\tgpgSign = true\n"
+        "[tag]\n\tgpgSign = true\n\tforceSignAnnotated = true\n"
+        "[gpg]\n\tprogram = /nonexistent/gpg\n[user]\n\tsigningkey = DEADBEEF\n"
+    )
+    xdg = home / ".config" / "git"
+    xdg.mkdir(parents=True)
+    (xdg / "config").write_text(f"[core]\n\thooksPath = {hooks}\n")
+    return home, ran
+
+
+@needs_git
+def test_global_git_config_does_not_leak_in(tmp_path, monkeypatch):
+    home, ran = _hostile_home(tmp_path)
+    monkeypatch.setenv("HOME", str(home))
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(home / ".config"))
+    ledger = GitLedger(tmp_path / "repo")
+    assert ledger.init()
+    (tmp_path / "repo" / "a.txt").write_text("a\n")
+    sha = ledger.commit("Sealed")
+    assert sha, ledger.last_error
+    assert ledger.tag("ch1"), ledger.last_error
+    assert "ch1" in ledger.tags()
+    assert not ran.exists(), ran.read_text()
+    # What the player sees in the Ledger UI is the plain command, not the -c plumbing.
+    assert ledger.last_command == ["git", "tag", "--list"]
+    env = gitstore._git_env()
+    assert env["GIT_CONFIG_GLOBAL"] == env["GIT_CONFIG_SYSTEM"] == gitstore.os.devnull
+
+
+@needs_git
+def test_output_is_utf8_regardless_of_locale(tmp_path, monkeypatch):
+    seen = {}
+    real_run = gitstore.subprocess.run
+
+    def spy(*a, **k):
+        seen.update(k)
+        return real_run(*a, **k)
+
+    monkeypatch.setattr(gitstore.subprocess, "run", spy)
+    ledger = GitLedger(tmp_path / "repo")
+    ledger.init()
+    assert ledger.commit("Sealed at Ćaer Wrén ✓")
+    assert ledger.log()[0].message == "Sealed at Ćaer Wrén ✓"
+    assert seen["encoding"] == "utf-8" and seen["errors"] == "replace"
+
+
+@needs_git
+def test_stale_index_lock_is_cleared_and_fresh_one_reported(tmp_path, monkeypatch):
+    import os
+    import time
+
+    monkeypatch.setenv("CODEROGUE_HOME", str(tmp_path))
+    store = SaveStore()
+    state = SaveState(map="m.tmj", waystone="Tilde Square")
+    assert store.save("slot1", state).sha
+    lock = store.slot_dir("slot1") / ".git" / "index.lock"
+
+    # A lock left by a git that was killed long ago: removed, the seal works.
+    lock.write_text("")
+    old = time.time() - 3600
+    os.utime(lock, (old, old))
+    r = store.save("slot1", state)
+    assert r.sha and r.error is None
+    assert not lock.exists()
+
+    # A fresh lock (another git may be running): left alone, and the reason surfaces.
+    lock.write_text("")
+    r = store.save("slot1", state)
+    assert r.sha is None
+    assert r.error and "index.lock" in r.error
+    assert store.ledger("slot1").commit("x") is None
+    lock.unlink()
+
+
+@needs_git
+def test_option_like_names_are_refused(tmp_path):
+    ledger = GitLedger(tmp_path / "repo")
+    ledger.init()
+    (tmp_path / "repo" / "a.txt").write_text("a\n")
+    assert ledger.commit("one")
+    assert ledger.tag("--help") is False
+    assert ledger.last_error and "cannot start with '-'" in ledger.last_error
+    assert ledger.restore("a.txt", "--orphan=x") is False
+    assert ledger.show_file("a.txt", "--output=/tmp/pwned") == ""
+    assert ledger.tags() == []

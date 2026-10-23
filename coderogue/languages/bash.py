@@ -116,11 +116,46 @@ BASH_RULES: tuple[ErrorRule, ...] = (
 )
 
 
+def _is_wsl_launcher(path: str) -> bool:
+    """True for ``C:\\Windows\\System32\\bash.exe`` (and SysWOW64/Sysnative): the WSL launcher,
+    which runs Linux bash and cannot open the sandbox's ``C:\\`` script paths."""
+    parts = [p.lower() for p in re.split(r"[\\/]+", path)]
+    return any(p in {"system32", "syswow64", "sysnative"} for p in parts)
+
+
+def _windows_bash_candidates() -> list[str]:
+    """Git for Windows' bash, in order: the standard install dirs, the ``bash`` beside the
+    ``git`` on PATH, then any other ``bash`` on PATH. The WSL launcher is never used."""
+    cands: list[str] = []
+    for var in ("ProgramFiles", "ProgramW6432", "ProgramFiles(x86)", "LOCALAPPDATA"):
+        base = os.environ.get(var)
+        if not base:
+            continue
+        git_root = os.path.join(base, "Programs", "Git") if var == "LOCALAPPDATA" else (
+            os.path.join(base, "Git"))
+        cands += [os.path.join(git_root, "bin", "bash.exe"),
+                  os.path.join(git_root, "usr", "bin", "bash.exe")]
+    git = shutil.which("git")
+    if git:
+        # <Git>\cmd\git.exe or <Git>\bin\git.exe or <Git>\mingw64\bin\git.exe
+        d = os.path.dirname(git)
+        for up in (os.path.dirname(d), os.path.dirname(os.path.dirname(d))):
+            cands += [os.path.join(up, "bin", "bash.exe"),
+                      os.path.join(up, "usr", "bin", "bash.exe")]
+    found = shutil.which("bash")
+    if found:
+        cands.append(found)
+    seen: list[str] = []
+    for c in cands:
+        if c in seen or _is_wsl_launcher(c) or not os.path.isfile(c):
+            continue
+        seen.append(c)
+    return seen
+
+
 def _bash_candidates() -> list[str]:
     if sys.platform == "win32":
-        # Only accept a bash the player already put on PATH (Git Bash or WSL).
-        found = shutil.which("bash")
-        return [found] if found else []
+        return _windows_bash_candidates()
     cands = ["/opt/homebrew/bin/bash", "/usr/local/bin/bash"]
     found = shutil.which("bash")
     if found:

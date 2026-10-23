@@ -13,12 +13,18 @@ What it does:
   ``HOME`` = the temp dir, ``LANG=C.UTF-8``, ``PYTHONIOENCODING=utf-8`` and nothing else
   (Windows additionally gets the handful of variables processes need to start, see
   :mod:`sandbox_win`);
-* POSIX: a new session (``start_new_session=True``) so a timeout kills the whole process group
-  with ``os.killpg``; rlimits (CPU = timeout + 1 s, file size 8 MB, 64 open files, a process
-  cap on Linux) applied by a launcher shim (:mod:`sandbox_posix`), never ``preexec_fn``;
+* POSIX: a new session (``start_new_session=True``) so the whole process group is killed with
+  ``os.killpg`` when the script ends (any way: exit, timeout, output cap); processes that left
+  the group (``setsid``) are found by a per-run environment tag (``CODEROGUE_RUN``, Linux) or
+  a working directory inside the temp dir (Linux, macOS) and killed when they keep the
+  output pipes open. rlimits (CPU = ceil(timeout + start-up allowance) +
+  1 s, so the wall clock fires first; file size 8 MB; 64 open files, or the language's
+  ``max_open_files``; a thread cap on Linux) are applied by a launcher shim
+  (:mod:`sandbox_posix`), never ``preexec_fn``. A SIGXCPU death still counts as a timeout.
   ``unshare -rn`` cuts the network on Linux where permitted. macOS has no network block (the
   only tool, ``sandbox-exec``, is deprecated);
-* Windows: a new process group, ``taskkill /T /F`` on timeout;
+* Windows: a new process group inside a kill-on-close Job Object (``taskkill /T /F`` when no
+  job could be made), so every descendant dies with the run;
 * stdout and stderr are each captured up to ``max_output_bytes``. Output beyond that marks the
   result ``output_truncated`` and stops the script early, so a print loop cannot eat memory.
   Pipes are drained by reader threads rather than ``communicate()`` for that reason.
@@ -27,11 +33,13 @@ What it does:
 from __future__ import annotations
 
 import os
+import stat
 import subprocess
 import sys
 import tempfile
 import threading
 import time
+import uuid
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, field
 from pathlib import Path, PurePosixPath
@@ -43,6 +51,9 @@ if sys.platform == "win32":
     from coderogue.puzzles import sandbox_win as _plat
 else:
     from coderogue.puzzles import sandbox_posix as _plat
+
+#: Environment variable carrying a per-run tag (see :func:`sandbox_posix.kill_strays`).
+RUN_TAG_VAR = "CODEROGUE_RUN"
 
 #: Files captured after the run are cut to this many bytes each.
 MAX_CAPTURED_FILE_BYTES = 256 * 1024
@@ -162,6 +173,42 @@ def _scrub_paths(text: str, tmpdir: str) -> str:
     return text
 
 
+def _make_writable(path: str) -> None:
+    """Best-effort ``chmod u+rwx`` on ``path`` and every directory under it (no symlinks), so
+    a script that ``chmod 000``-ed something cannot make the temp dir undeletable."""
+    try:
+        st = os.lstat(path)
+    except OSError:
+        return
+    if stat.S_ISLNK(st.st_mode):
+        return
+    try:
+        os.chmod(path, stat.S_IMODE(st.st_mode) | stat.S_IRWXU)
+    except OSError:
+        pass
+    if stat.S_ISDIR(st.st_mode):
+        try:
+            names = os.listdir(path)
+        except OSError:
+            return
+        for name in names:
+            _make_writable(os.path.join(path, name))
+
+
+def _join_all(threads: Iterable[threading.Thread], timeout_s: float) -> bool:
+    """Join ``threads`` within one shared deadline; True when all have finished."""
+    deadline = time.monotonic() + timeout_s
+    for t in threads:
+        t.join(max(0.0, deadline - time.monotonic()))
+    return not any(t.is_alive() for t in threads)
+
+
+#: After the script exits, how long the readers get to hit EOF before strays are hunted down.
+_DRAIN_GRACE_S = 0.25
+#: ...and how long after that hunt before the readers are abandoned (they end at EOF later).
+_DRAIN_AFTER_SWEEP_S = 1.0
+
+
 def run_script(
     language: Language,
     runtime: LanguageRuntime,
@@ -175,39 +222,68 @@ def run_script(
 
     ``fixtures`` may be a mapping ``{path: content}``, ``(path, content)`` pairs, or objects
     with ``.path`` and ``.content`` (e.g. :class:`coderogue.puzzles.spec.Fixture`).
+
+    Whatever way the script ends, its whole process tree is killed before the output is read,
+    so a background child (even one in its own session) cannot keep the pipes open and stall
+    the game.
     """
     with tempfile.TemporaryDirectory(prefix="coderogue-", ignore_cleanup_errors=True) as tmpdir:
         root = Path(tmpdir)
-        for rel, content in _fixture_items(fixtures):
-            _write_text(_safe_join(root, rel), content)
-        script = root / language.file_name
-        _write_text(script, code, language.script_encoding)
-
-        argv = language.command(runtime, language.file_name)
-        argv[-1] = str(script)
-        if sys.platform != "win32":
-            argv = [*_plat.network_prefix(), *_plat.rlimit_prefix(timeout_s), *argv]
-
-        start = time.monotonic()
         try:
-            proc = subprocess.Popen(
-                argv,
-                cwd=tmpdir,
-                env=build_env(runtime, tmpdir),
-                stdin=subprocess.PIPE,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                **_plat.popen_kwargs(),  # type: ignore[arg-type]
-            )
-        except OSError as exc:
-            return ExecResult("", f"could not start {runtime.executable}: {exc}", None,
-                              duration_s=time.monotonic() - start)
+            return _run_in(language, runtime, code, stdin, fixtures, timeout_s,
+                           max_output_bytes, tmpdir, root)
+        finally:
+            _make_writable(tmpdir)
 
+
+def _run_in(
+    language: Language,
+    runtime: LanguageRuntime,
+    code: str,
+    stdin: str,
+    fixtures: Iterable[Any] | Mapping[str, str] | None,
+    timeout_s: float,
+    max_output_bytes: int,
+    tmpdir: str,
+    root: Path,
+) -> ExecResult:
+    for rel, content in _fixture_items(fixtures):
+        _write_text(_safe_join(root, rel), content)
+    script = root / language.file_name
+    _write_text(script, code, language.script_encoding)
+
+    budget_s = timeout_s + language.startup_allowance_s
+    argv = language.command(runtime, language.file_name)
+    argv[-1] = str(script)
+    if sys.platform != "win32":
+        argv = [*_plat.network_prefix(),
+                *_plat.rlimit_prefix(budget_s, language.max_open_files), *argv]
+    # Every process of this run inherits the tag, so escapees can be found (see kill_strays).
+    tag = uuid.uuid4().hex
+    env = build_env(runtime, tmpdir)
+    env[RUN_TAG_VAR] = tag
+
+    start = time.monotonic()
+    try:
+        proc = subprocess.Popen(
+            argv,
+            cwd=tmpdir,
+            env=env,
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            **_plat.popen_kwargs(),  # type: ignore[arg-type]
+        )
+    except OSError as exc:
+        return ExecResult("", f"could not start {runtime.executable}: {exc}", None,
+                          duration_s=time.monotonic() - start)
+    job = _plat.attach(proc)
+    try:
         overflow = threading.Event()
 
         def _on_overflow() -> None:
             overflow.set()
-            _plat.kill_tree(proc)
+            _plat.kill_tree(proc, job)
 
         assert proc.stdout is not None and proc.stderr is not None and proc.stdin is not None
         readers = [
@@ -237,33 +313,43 @@ def run_script(
 
         timed_out = False
         try:
-            proc.wait(timeout=timeout_s + language.startup_allowance_s)
+            proc.wait(timeout=budget_s)
         except subprocess.TimeoutExpired:
             timed_out = not overflow.is_set()
-            _plat.kill_tree(proc)
-            proc.wait()
-        if sys.platform != "win32":
-            # Reap anything the script left running in the background.
-            _plat.kill_tree(proc)
-        for r in readers:
-            r.join(timeout=2.0)
-        writer.join(timeout=1.0)
-        for pipe in (proc.stdout, proc.stderr):
-            try:
-                pipe.close()
-            except OSError:
-                pass
+        # Kill the whole tree on every exit, not just a timeout: anything the script left
+        # running in the background would otherwise hold the pipes open.
+        _plat.kill_tree(proc, job)
+        proc.wait()
+        if not _join_all(readers, _DRAIN_GRACE_S):
+            # Someone outside the process group (a setsid child) still holds a pipe.
+            _plat.kill_strays(f"{RUN_TAG_VAR}={tag}", tmpdir)
+            _join_all(readers, _DRAIN_AFTER_SWEEP_S)
+        writer.join(timeout=0.5)
+        # Never close a pipe whose reader is still blocked in read(): close() would wait on
+        # the reader's lock. A daemon reader ends by itself at EOF and its pipe is then freed.
+        for r, pipe in zip(readers, (proc.stdout, proc.stderr), strict=True):
+            if not r.is_alive():
+                try:
+                    pipe.close()
+                except OSError:
+                    pass
         duration = time.monotonic() - start
+    finally:
+        _plat.release(job)
 
-        stdout = readers[0].buf.decode("utf-8", errors="replace")
-        stderr = _scrub_paths(readers[1].buf.decode("utf-8", errors="replace"), tmpdir)
-        files = _collect_files(root, language.file_name)
-        return ExecResult(
-            stdout=stdout,
-            stderr=stderr,
-            exit_code=None if timed_out else proc.returncode,
-            timed_out=timed_out,
-            output_truncated=overflow.is_set(),
-            files=files,
-            duration_s=duration,
-        )
+    if not timed_out and _plat.is_cpu_limit_death(proc.returncode):
+        # The CPU rlimit fired before the wall clock did: that is a timeout too.
+        timed_out = True
+    stdout = bytes(readers[0].buf).decode("utf-8", errors="replace")
+    stderr = _scrub_paths(bytes(readers[1].buf).decode("utf-8", errors="replace"), tmpdir)
+    _make_writable(tmpdir)
+    files = _collect_files(root, language.file_name)
+    return ExecResult(
+        stdout=stdout,
+        stderr=stderr,
+        exit_code=None if timed_out else proc.returncode,
+        timed_out=timed_out,
+        output_truncated=overflow.is_set(),
+        files=files,
+        duration_s=duration,
+    )

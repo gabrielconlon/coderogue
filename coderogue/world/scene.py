@@ -1403,7 +1403,11 @@ class WorldScene(Scene):
         if receipt.sha:
             self.flash(f"Sealed in the Ledger.  git commit -> {receipt.sha}", 4.0)
         else:
-            self.flash("Saved.", 3.0)
+            self.flash(
+                f"Saved, but the Ledger could not seal: {receipt.error}"
+                if getattr(receipt, "error", None) else "Saved.",
+                4.0,
+            )
 
     def _seal(self, message: str | None = None) -> SaveReceipt | None:
         """Write the slot (and commit it to the Ledger when git is on); no flash."""

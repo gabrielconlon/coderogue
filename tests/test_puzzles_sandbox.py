@@ -125,3 +125,128 @@ def test_bash_timeout_kills_background_children() -> None:
     r = run_script(BASH, BASH_RT, "sleep 30 &\nwhile true; do :; done\n", timeout_s=1.0)
     assert r.timed_out
     assert time.monotonic() - start < 2.5
+
+
+# ---- review fixes: process trees, CPU limit, NPROC shim, cleanup ---------------------------
+
+def _pids_running(pattern: str) -> list[str]:
+    import subprocess
+
+    out = subprocess.run(["ps", "-x", "-o", "pid=,command="], capture_output=True, text=True)
+    return [ln for ln in out.stdout.splitlines() if pattern in ln and "ps -x" not in ln]
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="POSIX process sweep")
+def test_setsid_grandchild_does_not_stall_and_is_killed() -> None:
+    # A child in its own session survives killpg and holds the pipes open; the run must
+    # still return promptly and the child must be gone.
+    marker = "sleep 30.4242"
+    code = ("import subprocess\n"
+            f"subprocess.Popen({marker.split()!r}, start_new_session=True)\n"
+            "print('hi')\n")
+    start = time.monotonic()
+    r = py(code, timeout_s=2.0)
+    elapsed = time.monotonic() - start
+    assert r.stdout == "hi\n" and r.exit_code == 0 and not r.timed_out
+    assert elapsed < 1.5
+    time.sleep(0.1)
+    assert _pids_running(marker) == []
+
+
+def test_background_child_in_group_is_killed_on_normal_exit() -> None:
+    marker = "sleep 30.4343"
+    code = f"import subprocess\nsubprocess.Popen({marker.split()!r})\nprint('ok')\n"
+    start = time.monotonic()
+    r = py(code, timeout_s=2.0)
+    assert r.stdout == "ok\n"
+    assert time.monotonic() - start < 1.5
+    if sys.platform != "win32":
+        time.sleep(0.1)
+        assert _pids_running(marker) == []
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="rlimits are POSIX-only")
+def test_cpu_limit_covers_startup_allowance_and_sigxcpu_is_a_timeout() -> None:
+    from coderogue.puzzles import sandbox_posix
+
+    assert sandbox_posix.cpu_seconds(2.0) == 3
+    assert sandbox_posix.cpu_seconds(2.0 + 2.0) == 5  # PowerShell: timeout + 2 s allowance
+    assert sandbox_posix.cpu_seconds(2.5) == 4
+    prefix = sandbox_posix.rlimit_prefix(4.0, 256)
+    assert prefix[6:9] == ["5", str(sandbox_posix.FSIZE_BYTES), "256"]
+    # A process killed by SIGXCPU reports as a timeout, not "code -24".
+    r = py("import os, signal\nos.kill(os.getpid(), signal.SIGXCPU)\n", timeout_s=2.0)
+    assert r.timed_out and r.exit_code is None
+
+
+def test_powershell_gets_more_open_files() -> None:
+    assert get("powershell").max_open_files == 256
+    assert PY.max_open_files is None
+
+
+def _shim_namespace() -> dict[str, object]:
+    from coderogue.puzzles import sandbox_posix
+
+    ns: dict[str, object] = {"__name__": "shim_under_test"}
+    exec(sandbox_posix.RLIMIT_SHIM, ns)  # defines helpers only; the main block is skipped
+    return ns
+
+
+def test_nproc_shim_counts_threads_with_headroom_and_floor(tmp_path) -> None:  # type: ignore[no-untyped-def]
+    import os
+
+    ns = _shim_namespace()
+    count = ns["_count_user_threads"]
+    limit = ns["_nproc_limit"]
+    uid = os.getuid() if hasattr(os, "getuid") else 0
+    proc = tmp_path / "proc"
+    for pid, threads in (("100", 3), ("200", 1500), ("300", 1)):
+        for t in range(threads):
+            (proc / pid / "task" / str(t)).mkdir(parents=True)
+    (proc / "self").mkdir()  # non-numeric entries are ignored
+    assert count(str(proc), uid, "linux") == 1504  # threads, not 3 processes
+    assert count(str(proc), uid + 1, "linux") == 0  # other users' tasks are not counted
+    assert count(str(proc), uid, "darwin") is None  # no cheap count: limit skipped
+    assert limit(1504, 256, 1024) == 1760
+    assert limit(10, 256, 1024) == 1024
+    assert limit(None, 256, 1024) is None
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="POSIX permissions")
+def test_chmod_000_does_not_leak_the_temp_dir() -> None:
+    import os
+
+    code = ("import os\nprint(os.getcwd())\nos.mkdir('vault')\n"
+            "open('vault/gold.txt', 'w').write('x')\nos.chmod('vault', 0)\n")
+    r = py(code)
+    assert r.exit_code == 0
+    assert r.files.get("vault/gold.txt") == "x"
+    assert not os.path.exists(r.stdout.strip())
+
+
+def test_windows_job_object_degrades_and_kill_tree_prefers_job(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    from coderogue.puzzles import sandbox_win
+
+    class FakeProc:
+        pid = 4242
+        _handle = 0
+        killed = False
+
+        def kill(self) -> None:
+            self.killed = True
+
+    if sys.platform != "win32":
+        # No kernel32 here: attach must degrade to None rather than raise.
+        assert sandbox_win.attach(FakeProc()) is None  # type: ignore[arg-type]
+    terminated: list[object] = []
+    monkeypatch.setattr(sandbox_win, "_terminate_job", lambda job: terminated.append(job) or True)
+    ran: list[list[str]] = []
+    monkeypatch.setattr(sandbox_win.subprocess, "run", lambda argv, **kw: ran.append(argv))
+    proc = FakeProc()
+    sandbox_win.kill_tree(proc, job=1234)  # type: ignore[arg-type]
+    assert terminated == [1234] and proc.killed and ran == []  # no taskkill needed
+    monkeypatch.setattr(sandbox_win.shutil, "which", lambda name: "taskkill.exe")
+    sandbox_win.kill_tree(proc, job=None)  # type: ignore[arg-type]
+    assert ran and ran[0][:3] == ["taskkill.exe", "/T", "/F"]
+    assert sandbox_win.kill_strays("CODEROGUE_RUN=x", "C:\\tmp") == 0
+    assert sandbox_win.is_cpu_limit_death(-24) is False

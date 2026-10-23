@@ -106,6 +106,8 @@ class PowerShellLanguage(Language):
             # Windows PowerShell 5.1 reads BOM-less scripts as ANSI; a BOM keeps UTF-8 intact.
             script_encoding="utf-8-sig",
             startup_allowance_s=2.0,
+            # The .NET runtime opens well over 64 files just to start.
+            max_open_files=256,
             rules=PS_RULES,
         )
 
