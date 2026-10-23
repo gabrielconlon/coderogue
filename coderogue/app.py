@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from coderogue.puzzles import PuzzleSpec
     from coderogue.scene import Scene
+    from coderogue.world.scene import WorldScene
 
 LOGICAL_SIZE = (960, 540)
 UPDATE_HZ = 60
@@ -73,6 +74,9 @@ class Game:
 
         self.puzzles: dict[str, PuzzleSpec] = {}  # loaded lazily by coderogue.altar
         self.progress = Progress()
+        from coderogue.save.store import SaveStore
+
+        self.saves = SaveStore()
 
     # ---- scene stack ------------------------------------------------------------------
     @property
@@ -208,7 +212,26 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--arrows", action="store_true", help="also bind arrow keys and WASD (fallback)"
     )
+    parser.add_argument("--new", action="store_true", help="ignore the saved slot; start fresh")
     return parser
+
+
+def _restore_save(game: Game, world: WorldScene) -> None:
+    """Load slot1 if it exists and matches the current map; otherwise start fresh."""
+    from coderogue.progress import Progress
+    from coderogue.world.scene import SAVE_SLOT
+
+    try:
+        state = game.saves.load(SAVE_SLOT)
+    except Exception:  # noqa: BLE001 - a corrupt save must never block starting the game
+        return
+    if state is None:
+        return
+    game.progress = Progress.from_dict(state.progress)
+    if state.map and Path(state.map).resolve() == world.map_path.resolve():
+        world.player.x, world.player.y = state.player.x, state.player.y
+        world.player.hp = state.player.hp
+    world._sync_altars()
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -226,7 +249,10 @@ def main(argv: list[str] | None = None) -> int:
     game = Game(headless=headless)
     game.arrows_fallback = args.arrows
     try:
-        game.push(WorldScene(game, map_path))
+        world = WorldScene(game, map_path)
+        if not args.new:
+            _restore_save(game, world)
+        game.push(world)
         return game.run(max_frames=args.headless_frames if headless else None)
     finally:
         pygame.quit()

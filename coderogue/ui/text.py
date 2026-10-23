@@ -14,6 +14,11 @@ def get_font(size: int = 14, bold: bool = False) -> pygame.font.Font:
     """Return a cached JetBrains Mono font (falls back to pygame's default font)."""
     key = (size, bold)
     font = _fonts.get(key)
+    if font is not None:
+        try:
+            font.get_height()
+        except pygame.error:  # font died with pygame.quit(); rebuild it
+            font = None
     if font is None:
         from coderogue.app import resource_path
 

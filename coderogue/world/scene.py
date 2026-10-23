@@ -12,10 +12,14 @@ from coderogue.entities import sprites
 from coderogue.entities.altar import Altar
 from coderogue.entities.base import Entity, StaticProp
 from coderogue.entities.enemies import Wanderer
+from coderogue.entities.npc import Npc
 from coderogue.entities.player import Player
 from coderogue.input.keymap import MOVE_ACTIONS, Action, Keymap
 from coderogue.input.modes import Mode, ModeMachine
+from coderogue.save.store import PlayerState, SaveState
 from coderogue.scene import Scene
+from coderogue.story.dialogue import DialogueBank
+from coderogue.story.scene import DialogueScene
 from coderogue.ui.hud import draw_hud
 from coderogue.ui.text import draw_text, render_text
 from coderogue.world.camera import Camera
@@ -31,6 +35,7 @@ VIEW_SIZE = (320, 180)  # world pixels shown; scaled 3x to the 960x540 logical s
 BG_COLOR = (20, 16, 24)
 
 PROP_SPRITES = {"npc": sprites.KNIGHT, "chest": sprites.CHEST}
+SAVE_SLOT = "slot1"
 
 
 def _tile_prop(obj: MapObject, default: int | None) -> int | None:
@@ -65,6 +70,8 @@ class WorldScene(Scene):
         self.enemies: list[Wanderer] = []
         self.altars: list[Altar] = []
         self.props: list[Entity] = []
+        self.npcs: list[Npc] = []
+        self.dialogue_bank = DialogueBank.load_default()
         self.altar_handler: Callable[[Altar], None] | None = None
         self.show_debug = True
         self.message = ""
@@ -103,7 +110,13 @@ class WorldScene(Scene):
                 )
                 enemy.place_center(*obj.center)
                 self.enemies.append(enemy)
-            elif obj.type in ("npc", "chest", "door"):
+            elif obj.type == "npc":
+                tile = _tile_prop(obj, PROP_SPRITES["npc"])
+                sprite = sprites.sheet_tile(tile) if tile is not None else None
+                self.npcs.append(
+                    Npc(obj.x, obj.y, sprite, name=obj.name, properties=obj.properties)
+                )
+            elif obj.type in ("chest", "door"):
                 tile = _tile_prop(obj, PROP_SPRITES.get(obj.type))
                 sprite = sprites.sheet_tile(tile) if tile is not None else None
                 self.props.append(
@@ -164,6 +177,8 @@ class WorldScene(Scene):
             altar = self.altar_in_reach()
             if altar is not None:
                 self.on_altar(altar)
+            else:
+                self.talk_to_npc_in_reach()
         elif action is Action.ESCAPE:
             self.modes.escape()
         elif action is Action.COMMAND:
@@ -195,6 +210,10 @@ class WorldScene(Scene):
             self.flash("VIM keys only")
         elif command == "debug":
             self.show_debug = not self.show_debug
+        elif command in ("save", "w"):
+            self.save_game()
+        elif command == "ledger":
+            self.show_ledger()
         elif command:
             self.flash(f"E492: Not an editor command: {command}")
 
@@ -255,6 +274,13 @@ class WorldScene(Scene):
 
     def on_puzzle_solved(self, spec: PuzzleSpec, result: PuzzleResult) -> None:
         """An altar's puzzle was solved: light every altar for it and announce the reward."""
+        progress = getattr(self.game, "progress", None)
+        if progress is not None:
+            progress.flags.add(f"solved:{spec.id}")
+            if spec.is_boss:
+                saves = getattr(self.game, "saves", None)
+                if saves is not None:
+                    saves.tag_chapter(SAVE_SLOT, f"ch{spec.chapter}")
         self._sync_altars()
         effect = spec.reward.world_effect or "The altar lights."
         self.flash(effect, seconds=5.0)
@@ -262,6 +288,62 @@ class WorldScene(Scene):
     def on_puzzle_skipped(self, spec: PuzzleSpec) -> None:
         """The player skipped ``spec``: Pell's ghostly bridge spans the gap (altar stays unlit)."""
         self.flash("A ghostly Pell-bridge shimmers into place. The altar stays unlit.", 5.0)
+
+    # ---- npcs and saving --------------------------------------------------------------
+    def npc_in_reach(self) -> Npc | None:
+        """The first NPC whose interact box overlaps the player, if any."""
+        box = self.player.box
+        return next((n for n in self.npcs if boxes_overlap(box, n.interact_box())), None)
+
+    def talk_to_npc_in_reach(self) -> None:
+        """Open the dialogue for the NPC in reach, picking the first line set whose flags fit."""
+        npc = self.npc_in_reach()
+        if npc is None:
+            return
+        flags = self.game.progress.flags
+        dialogue = self.dialogue_bank.pick(npc.key, flags)
+        if dialogue is None:
+            self.flash(f"{npc.name} has nothing to say.")
+            return
+        self.held.clear()
+        self.game.push(DialogueScene(self.game, dialogue))
+
+    def save_state(self) -> SaveState:
+        """Snapshot the world and progress for the save store."""
+        p = self.player
+        return SaveState(
+            map=str(self.map_path),
+            player=PlayerState(p.x, p.y, p.hp, getattr(p, "facing", "down")),
+            progress=self.game.progress.to_dict(),
+            area_name=self.area_name,
+            waystone=self.area_name,
+        )
+
+    def save_game(self) -> None:
+        """``:save``: write the slot and seal it in the Ledger (a git commit) when enabled."""
+        saves = getattr(self.game, "saves", None)
+        if saves is None:
+            self.flash("No save store.")
+            return
+        receipt = saves.save(SAVE_SLOT, self.save_state())
+        self.game.progress.flags.add("first_seal")
+        if receipt.sha:
+            self.flash(f"Sealed in the Ledger.  git commit -> {receipt.sha}", 4.0)
+        else:
+            self.flash("Saved.", 3.0)
+
+    def show_ledger(self) -> None:
+        """``:ledger``: show the last few seals (git log --oneline)."""
+        saves = getattr(self.game, "saves", None)
+        if saves is None:
+            return
+        ledger = saves.ledger(SAVE_SLOT)
+        if not ledger.available:
+            self.flash(saves.ledger_status(), 4.0)
+            return
+        entries = ledger.log(5)
+        text = " | ".join(f"{e.sha} {e.message}" for e in entries) or "The Ledger is empty."
+        self.flash(f"git log --oneline:  {text}", 6.0)
 
     # ---- simulation -------------------------------------------------------------------
     def update(self, dt: float) -> None:
@@ -298,7 +380,9 @@ class WorldScene(Scene):
         view.fill(BG_COLOR)
         offset = self.camera.offset
         self.tilemap.draw_below(view, offset)
-        entities: list[Entity] = [*self.props, *self.altars, *self.enemies, self.player]
+        entities: list[Entity] = [
+            *self.props, *self.npcs, *self.altars, *self.enemies, self.player
+        ]
         for ent in sorted(entities, key=lambda e: e.bottom):
             ent.draw(view, offset)
         self.tilemap.draw_above(view, offset)
