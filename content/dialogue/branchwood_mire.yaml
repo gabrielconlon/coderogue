@@ -1,0 +1,228 @@
+# Chapter 2: Branchwood & the Looping Mire. Map sets entered:branchwood, entered:looping_mire.
+# Story flags set here: met_sable, got_spyglass, read_crow_letter, got_hourglass, ledger_disaster,
+# ledger_restored, pell_word2.
+
+# ---- Sable, ranger of Branchwood ----------------------------------------------------------
+sable_after_boss:
+  npc: sable
+  speaker: Sable
+  requires: ["solved:ch2-b"]
+  lines:
+    - "The Mire's quiet. I can hear birds. I'd forgotten they were allowed to sing."
+    - "Every fork in the wood is a question. You answered the biggest one. Walk on."
+
+sable_bestiary:
+  npc: sable
+  speaker: Sable
+  requires: [got_spyglass, "solved:ch2-02"]
+  lines:
+    - "Brute, skirmisher, pest. The bestiary sorts itself now. I'd call it a miracle, but it's an `elif`."
+
+sable_repeat:
+  npc: sable
+  speaker: Sable
+  requires: [got_spyglass]
+  lines:
+    - "Hold `v` to lock on. `hjkl` cycles targets. Null-wisps can't dodge what they can't hide from."
+    - "My bestiary wants a classifier, if you feel like an optional favour. Brute, skirmisher, pest."
+
+sable_first:
+  npc: sable
+  speaker: Sable
+  once: true
+  requires: ["entered:branchwood", "solved:ch2-01"]
+  sets: [met_sable, got_spyglass, learned_v]
+  lines:
+    - "You crossed the weighbridge without breaking it. That puts you ahead of most of the County."
+    - "Sable. Ranger. Every fork in the wood is a question; answer it before you walk."
+    - "Take the Spyglass. Hold `v` and it locks onto the nearest target. `hjkl` cycles through them."
+    - "Null-wisps slip through a normal swing. Locked on, they can't. That's VISUAL mode."
+    - "In the editor, `v` selects text the same way. Same stance, different quarry."
+  choices:
+    - text: "Thanks. What's a wisp?"
+    - text: "Do you ever stop talking in riddles?"
+      sets: [teased_sable]
+
+sable_gate:
+  npc: sable
+  speaker: Sable
+  requires: ["entered:branchwood"]
+  lines:
+    - "Not yet. The bridge first. Weigh what you carry, and the wood will tell you the rest."
+    - "My lodge has a spyglass with your name on it. Cross the bridge and I'll find it."
+
+# ---- Tally's crow letter (counts) -------------------------------------------------------
+crow_letter_after:
+  npc: crow_letter
+  speaker: "Crow letter"
+  requires: [read_crow_letter]
+  lines:
+    - "(The crow has gone. The letter says: COUNT BEFORE YOU ACT. P.S. THREE POTIONS = 36.)"
+
+crow_letter:
+  npc: crow_letter
+  speaker: "Letter from Tally"
+  sets: [read_crow_letter, learned_counts]
+  lines:
+    - "Dear Wren. One crow, two feathers, three paragraphs. Here we go."
+    - "A number before a key repeats it. `3j` dashes three tiles down. `3x` is a triple strike."
+    - "It works in the editor too: `3j` moves three lines, `2dd` deletes two. Count first, THEN act."
+    - "Yours, Tally. P.S. The crow has been paid. Four coins. I counted."
+
+# ---- Travelers of the Mire --------------------------------------------------------------
+traveler_a_after:
+  npc: mire_traveler_a
+  speaker: Traveler
+  requires: ["solved:ch2-b"]
+  lines:
+    - "Oh! The path ends! It has an END! I'd forgotten ends existed. Thank you!"
+
+traveler_a:
+  npc: mire_traveler_a
+  speaker: Traveler
+  lines:
+    - "Good evening! Lovely evening. Good evening! Lovely evening."
+    - "I've been walking this path since... well, I'm just back from it. Good evening!"
+
+traveler_b_after:
+  npc: mire_traveler_b
+  speaker: Traveler
+  requires: ["solved:ch2-03"]
+  lines:
+    - "The bells have stopped. It's so quiet. So quiet. So quiet. Oh, I'm sorry, that's habit."
+
+traveler_b:
+  npc: mire_traveler_b
+  speaker: Traveler
+  lines:
+    - "Excuse me, which way to the end of the path?"
+    - "I asked a very nice woman. She said, 'Excuse me, which way to the end of the path?'"
+    - "We have both been very polite about it."
+  choices:
+    - text: "I'll find it."
+    - text: "...Have we met?"
+      sets: [asked_have_we_met]
+
+traveler_c:
+  npc: mire_traveler_c
+  speaker: Traveler
+  lines:
+    - "After you. No, after you. Please. I insist. After you. No, after you."
+    - "(This has been going on for some time. Both of them seem to be enjoying it.)"
+
+# ---- Ono, the time-hermit ---------------------------------------------------------------
+ono_after:
+  npc: ono
+  speaker: Ono
+  requires: [got_hourglass]
+  lines:
+    - "`u` unwinds three seconds. Three charges. The waystones refill them."
+    - "Regret is only data you haven't reversed yet. Go gently."
+
+ono_first:
+  npc: ono
+  speaker: Ono
+  once: true
+  requires: ["entered:looping_mire"]
+  sets: [got_hourglass, learned_u]
+  lines:
+    - "Shh. You are late. You are also early. It makes no difference in a shrine."
+    - "I am Ono, keeper of the Hourglass. I have been undoing the same afternoon for eleven years."
+    - "Take it. Press `u` and the last three seconds are unmade. You have three charges."
+    - "In the editor, `u` undoes your last change. A spell is easier to fix than a regret."
+  choices:
+    - text: "Thank you, Ono."
+    - text: "Eleven years of the same afternoon?"
+      sets: [asked_ono_afternoon]
+
+# ---- Cole at the Mire: the Ledger disaster ----------------------------------------------
+cole_mire_walkthrough:
+  npc: cole_mire
+  speaker: Cole
+  requires: [ledger_disaster]
+  unless: [ledger_restored]
+  sets: [ledger_restored]
+  lines:
+    - ":ahem. Steady. Three words. We start with the oldest: `git log`."
+    - "`git log` lists every seal, newest first. Each has a long, ugly name, a hash. Find the one before the Null came."
+    - "Next, `git diff`. It shows what changed between a seal and now. Red lines are what you lost; green is what's new."
+    - "The ward's lines are red. Every one. The Null wrote nothing. It only deleted."
+    - "Last: `git checkout`. It brings a file back from a seal. I run it with the old seal's name and the ward's path."
+    - "(Cole draws a seal in the air. Grey spreads from the corners, and then the ward's words slide back into place.)"
+    - "There. Whole. This is why we seal often, Wren. The Ledger forgives. The Null does not."
+  choices:
+    - text: "Thank you, Cole."
+    - text: "That was a lot of git."
+      sets: [joked_about_git]
+
+cole_mire_after:
+  npc: cole_mire
+  speaker: Cole
+  requires: [ledger_restored]
+  lines:
+    - ":ahem. `git log`, `git diff`, `git checkout`. Say them three times and you'll never lose a ward."
+    - "Seal often. Keep your `:ledger` close, and `:q` closer. Not too close."
+
+cole_mire_disaster:
+  npc: cole_mire
+  speaker: Cole
+  once: true
+  requires: ["entered:looping_mire"]
+  sets: [ledger_disaster]
+  lines:
+    - ":ahem. A... situation. Wren. The ward on the Mire's gate."
+    - "I had sealed it in the Ledger, as is proper. The Null came in off the water. It ate the SEALED copy."
+    - "Not the file. The seal. The ward is... gone. Both versions. The one we're standing on, and the one we remember."
+    - "No. Wait. The Ledger doesn't forget; the Null only deleted the working copy. There's still a seal behind it."
+    - "Come back and talk to me again, when you've got your breath. We'll read it back, together."
+
+cole_mire:
+  npc: cole_mire
+  speaker: Cole
+  lines:
+    - ":ahem. I'll be here. Somewhere dry, I hope."
+
+# ---- The Ouroboros -----------------------------------------------------------------------
+ouroboros_defeated:
+  npc: ouroboros
+  speaker: Ouroboros
+  requires: ["solved:ch2-b"]
+  lines:
+    - "(A long, sleepy serpent unwinds into the river. It sighs, and its tail floats free.)"
+    - "(It does not appear to remember being a problem.)"
+
+ouroboros:
+  npc: ouroboros
+  speaker: Ouroboros
+  lines:
+    - "(A ring of scales as wide as the causeway, one end eating the other.)"
+    - "(Every lap it regrows. It is not angry. It is simply... still going.)"
+
+# ---- Pell, second words -----------------------------------------------------------------
+pell_ch2_word:
+  npc: pell_ch2
+  speaker: Pell
+  once: true
+  requires: ["solved:ch2-b"]
+  sets: [pell_word2]
+  lines:
+    - "(The outline is a little darker. A quill-hand rises, trembling.)"
+    - "Morrow."
+    - "The Blank."
+    - "Do not let them... empty..."
+    - "(Pell's outline flickers. The sentence is unfinished. The warning is not.)"
+
+pell_ch2_after:
+  npc: pell_ch2
+  speaker: Pell
+  requires: [pell_word2]
+  lines:
+    - "Morrow. The Blank."
+    - "(Pell keeps turning toward the north road, as if the name were pulling.)"
+
+pell_ch2:
+  npc: pell_ch2
+  speaker: "None"
+  lines:
+    - "...Wren."
+    - "(One word, then silence. Pell is holding the quill very tightly.)"

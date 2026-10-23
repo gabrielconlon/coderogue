@@ -19,3 +19,51 @@
   steps:
     - {text: "Set a seal at the waystone.", done_when: first_seal}
     - {text: "Take the north road to Echo Vale.", done_when: "entered:echo_vale"}
+
+- id: echo_vale
+  title: "Echo Vale"
+  starts_when: "entered:echo_vale"
+  steps:
+    - {text: "Hop the word-stones with w, b and e; talk to Pip.", done_when: met_pip}
+    - {text: "Re-carve Murmurby's name-stone (1-01).", done_when: "solved:ch1-01"}
+    - {text: "Meet Cole at the Crossroads waystone.", done_when: cole_map_told}
+    - {text: "Pay the toll bridge (1-03).", done_when: "solved:ch1-03"}
+    - {text: "Share the apples (1-04).", done_when: "solved:ch1-04"}
+    - {text: "Answer the ferryman (1-05).", done_when: "solved:ch1-05"}
+    - {text: "Give the town crier a voice (1-06).", done_when: "solved:ch1-06"}
+    - {text: "Write Tally's receipt (1-07).", done_when: "solved:ch1-07"}
+    - {text: "Defeat Grubble in the Hall of Echoes (1-B).", done_when: "solved:ch1-b"}
+    - {text: "Hear Pell at the waystone.", done_when: pell_word1}
+
+- id: branchwood_mire
+  title: "Branchwood & the Looping Mire"
+  starts_when: pell_word1
+  steps:
+    - {text: "Enter Branchwood.", done_when: "entered:branchwood"}
+    - {text: "Cross the weighbridge (2-01).", done_when: "solved:ch2-01"}
+    - {text: "Take Sable's Spyglass.", done_when: got_spyglass}
+    - {text: "Read Tally's crow letter.", done_when: read_crow_letter}
+    - {text: "Silence the Mire bells (2-03).", done_when: "solved:ch2-03"}
+    - {text: "Find Ono's Hourglass in the sunken shrine.", done_when: got_hourglass}
+    - {text: "Light the causeway lanterns (2-04).", done_when: "solved:ch2-04"}
+    - {text: "Write down the herbalist's list (2-05).", done_when: "solved:ch2-05"}
+    - {text: "Sort the swarm (2-06).", done_when: "solved:ch2-06"}
+    - {text: "Ask Cole about the Ledger.", done_when: ledger_disaster}
+    - {text: "Restore the ward with git log, diff and checkout.", done_when: ledger_restored}
+    - {text: "Defeat the Ouroboros (2-B).", done_when: "solved:ch2-b"}
+    - {text: "Hear Pell at the waystone.", done_when: pell_word2}
+
+- id: grand_directory
+  title: "The Grand Directory"
+  starts_when: pell_word2
+  steps:
+    - {text: "Enter the Grand Directory.", done_when: "entered:grand_directory"}
+    - {text: "Calm Dex: build the inventory (3-01).", done_when: "solved:ch3-01"}
+    - {text: "Count every word in the Gossip Gallery (3-02).", done_when: "solved:ch3-02"}
+    - {text: "Teach the stamp-golems to greet (3-03).", done_when: "solved:ch3-03"}
+    - {text: "Learn marks from Cole.", done_when: learned_marks}
+    - {text: "Write Dex's ledger (3-05).", done_when: "solved:ch3-05"}
+    - {text: "Read the singed scroll (3-06).", done_when: "solved:ch3-06"}
+    - {text: "Build the pipe-aqueduct (3-07).", done_when: "solved:ch3-07"}
+    - {text: "Defeat the Hollow Archivist (3-B).", done_when: "solved:ch3-b"}
+    - {text: "Find Pell at the waystone.", done_when: pell_restored}

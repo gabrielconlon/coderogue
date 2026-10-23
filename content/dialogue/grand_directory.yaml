@@ -1,0 +1,167 @@
+# Chapter 3: The Grand Directory. Map sets entered:grand_directory.
+# Story flags set here: met_dex, learned_yank, learned_search, learned_marks, pell_restored,
+# morrow_road_seen.
+
+# ---- Dex, archivist ----------------------------------------------------------------------
+dex_after_boss:
+  npc: dex
+  speaker: Dex
+  requires: ["solved:ch3-b"]
+  lines:
+    - "register: restored. pencil: still missing. mood: ecstatic."
+    - "Forty thousand books, Wren. And now every name in them is spelled right."
+
+dex_search:
+  npc: dex
+  speaker: Dex
+  requires: [learned_yank, "solved:ch3-03"]
+  sets: [learned_search]
+  unless: [learned_search]
+  lines:
+    - "Right. Next trick: `/`. Type `/atlas` and every atlas in the hall glows."
+    - "`n` jumps to the next match. `N` goes back. Same in the editor."
+    - "It's how I find a pencil. Spoiler: I haven't."
+
+dex_repeat:
+  npc: dex
+  speaker: Dex
+  requires: [learned_search]
+  lines:
+    - "`/` to search. `n` for next. `yy` to yank a shelf. `p` to put it down."
+    - "search: found. pencil: not found. status: ongoing."
+
+dex_yank:
+  npc: dex
+  speaker: Dex
+  requires: [learned_yank]
+  lines:
+    - "Yank a thing with `yy`, put it with `p`. A bookshelf, a plank, a brazier. Anything stationary."
+    - "pressure_plate: needs_weight. you: have_a_shelf. conclusion: obvious."
+
+dex_first:
+  npc: dex
+  speaker: Dex
+  once: true
+  requires: ["solved:ch3-01"]
+  sets: [learned_yank]
+  lines:
+    - "inventory: half_blank. potion: 3. lantern: ?. book_count: ???"
+    - "Oh. You solved it. Sorry. I talk like that when the shelves go blank. Habit."
+    - "Dictionaries! Names to values! Listen: the next trick is `yy`, yank a line. And `p`, put it."
+    - "In the world, yank a bookshelf, a plank, a brazier, then put it somewhere else. In the editor, it's copy and paste."
+  choices:
+    - text: "You lost a pencil?"
+      sets: [asked_pencil]
+    - text: "Understood."
+
+dex_panic:
+  npc: dex
+  speaker: Dex
+  once: true
+  requires: ["entered:grand_directory"]
+  sets: [met_dex]
+  lines:
+    - "name: Dex. role: archivist. status: PANIC."
+    - "books: forty_thousand. books_with_titles: half. books_with_authors: none. pencil: missing."
+    - "The Null came in through the catalogue. It's eating the indexes. I can't look anything up."
+    - "I need a dictionary. A real one. Keys, values. Can you help? key: Wren. value: helpful?"
+
+dex_waiting:
+  npc: dex
+  speaker: Dex
+  requires: [met_dex]
+  lines:
+    - "inventory: half_blank. please: help. thanks: pending."
+
+# ---- Stamp-golems ------------------------------------------------------------------------
+golem_after:
+  npc: stamp_golem
+  speaker: "Stamp-golem"
+  requires: ["solved:ch3-03"]
+  lines:
+    - "HAIL, WREN! HAIL, WREN! HAIL, WREN!"
+    - "(The golems step aside in perfect formation. One of them bows. The bow is also a function.)"
+
+golem:
+  npc: stamp_golem
+  speaker: "Stamp-golem"
+  lines:
+    - "HALT. THE READING ROOM ADMITS ONLY THOSE WHO CAN GREET."
+    - "RITE: GREET ONCE, GREET AGAIN, GREET A THIRD TIME. SAME WORDS. EVERY TIME."
+    - "(The golems stamp in unison. One of them stamps, then looks apologetic.)"
+
+# ---- Cole at the Directory: marks --------------------------------------------------------
+cole_dir_after:
+  npc: cole_directory
+  speaker: Cole
+  requires: [learned_marks]
+  lines:
+    - ":ahem. `ma` marks a waystone. `'a` takes you back. The Directory loves a backtrack."
+    - "Set a mark before every phase. You'll thank me. Quietly."
+
+cole_dir_first:
+  npc: cole_directory
+  speaker: Cole
+  once: true
+  requires: ["entered:grand_directory"]
+  sets: [learned_marks]
+  lines:
+    - ":ahem. The Grand Directory. Seventy-odd halls. All of them look alike. You will get lost."
+    - "So learn marks. At a waystone, press `m` and a letter: `ma`, `mb`. That plants a flag."
+    - "Press `'` and that letter, and you are there. A fast-travel for the practical."
+    - "It's `:marks` that lists them. And please, still not `:q`."
+  choices:
+    - text: "ma. Got it."
+    - text: ":marks?"
+      sets: [asked_marks]
+
+# ---- Hollow Archivist --------------------------------------------------------------------
+archivist_defeated:
+  npc: hollow_archivist
+  speaker: "Hollow Archivist"
+  requires: ["solved:ch3-b"]
+  lines:
+    - "(Cards drift to the floor, each one blank and then not blank. They sort themselves.)"
+    - "...register... complete... thank... you..."
+
+archivist:
+  npc: hollow_archivist
+  speaker: "Hollow Archivist"
+  lines:
+    - "(A figure of torn index cards, wearing Morrow's old robes. It does not speak. It files.)"
+    - "(Name cards flutter from its sleeves and vanish.)"
+
+# ---- Pell restored -----------------------------------------------------------------------
+pell_ch3_gate:
+  npc: pell_ch3
+  speaker: Pell
+  requires: [pell_restored]
+  lines:
+    - "Read it twice, Wren. Write it once. You did both, and then some."
+    - "Morrow's road is still commented out. We'll uncomment it together."
+
+pell_ch3_restored:
+  npc: pell_ch3
+  speaker: Pell
+  once: true
+  requires: ["solved:ch3-b"]
+  sets: [pell_restored, morrow_road_seen]
+  lines:
+    - "(Colour floods the outline. Pell blinks. Pell sees you.)"
+    - "You wrote me back."
+    - "I felt my name in the register, in your sorting. Third line from the top."
+    - "Morrow, Wren. The Archscribe. Once the head of the Modal Order, and my own teacher's teacher."
+    - "They've commented out the road to Rootholm. Every step. The # marks go all the way to the Hollow."
+    - "We can't walk a road that has been told not to run. But we can write it back."
+    - "Together. Moth too. Do not let Morrow empty the world."
+  choices:
+    - text: "Together."
+    - text: "You just said a lot of words."
+      sets: [joked_pell_words]
+
+pell_ch3:
+  npc: pell_ch3
+  speaker: Pell
+  lines:
+    - "...Wren."
+    - "(Almost. Pell is almost back. There's a grey seam where the words should be.)"

@@ -1,0 +1,364 @@
+# Chapter 1: Echo Vale. Entries per npc are tried top to bottom; strictest requires first.
+# Flags set by the map: entered:echo_vale. Story flags set here: met_pip, learned_w, met_quill,
+# met_tally, shop_open (Tally, after 1-07), grubble_declared, saw_grubble_fall, pell_word1.
+
+# ---- Pip, Quill's apprentice, at the word-stones -------------------------------------------
+pip_after_boss:
+  npc: pip
+  speaker: Pip
+  requires: ["solved:ch1-b"]
+  lines:
+    - "The river ran backwards for a second when the banner lit. Then it apologised."
+    - "I'm going to tell everyone I helped. I handed Quill a quill."
+
+pip_stride_done:
+  npc: pip
+  speaker: Pip
+  requires: [learned_w, "solved:ch1-01"]
+  lines:
+    - "You hop stones like you hop words in the editor. Same key, same stride."
+    - "Quill says that's not a coincidence. Quill says most things aren't. Quill says them twice."
+
+pip_repeat:
+  npc: pip
+  speaker: Pip
+  requires: [met_pip]
+  lines:
+    - "`w` to the next stone. `b` back. `e` to its far edge. Hop, hop, hop."
+    - "Don't land in the gaps. The gaps are where the river keeps the mistakes."
+
+pip_intro:
+  npc: pip
+  speaker: Pip
+  once: true
+  requires: ["entered:echo_vale"]
+  sets: [met_pip, learned_w, learned_b, learned_e]
+  lines:
+    - "Oh! A traveller! Quill's apprentice, Pip. The bridge is out. So is the bridge's name."
+    - "These are word-stones. See the gaps? Don't walk. Hop. Press `w` to leap to the start of the next stone."
+    - "`b` leaps back to the start of the last one. `e` lands on the far edge of the stone you're on."
+    - "In a fight, `w` and `b` are dashes. You can't be hit mid-hop. Quill calls this the Runner's Stride."
+    - "In the editor they hop between words instead. Same keys. Two meanings. Isn't that rude of them?"
+  choices:
+    - text: "Hop, hop, hop."
+    - text: "Who names a bridge?"
+      sets: [asked_bridge_name]
+
+# ---- Murmurby villagers: signs and names the Null took --------------------------------------
+murmurby_sign:
+  npc: namestone_sign
+  speaker: "Name-stone"
+  requires: ["solved:ch1-01"]
+  lines:
+    - "WELCOME TO MURMURBY"
+    - "(The letters are still a bit wet.)"
+
+murmurby_sign_blank:
+  npc: namestone_sign
+  speaker: "Sign"
+  lines:
+    - "WELCOME TO"
+    - "(There used to be a name here. Now there's a smooth, grey, judgmental rectangle.)"
+
+villager_a_after:
+  npc: villager_mara
+  speaker: Mara
+  requires: ["solved:ch1-01"]
+  lines:
+    - "Murmurby! That's where I live! I'd forgotten! I was about to move here!"
+
+villager_a:
+  npc: villager_mara
+  speaker: Mara
+  lines:
+    - "I'm looking for the way to... the... place. The place with the hill. And the baker."
+    - "That sign used to say where I am. Now it says WELCOME TO and then nothing. Rude."
+
+villager_b_after:
+  npc: villager_orrin
+  speaker: Orrin
+  requires: ["solved:ch1-01"]
+  lines:
+    - "My shop sign says 'ORRIN'S' again. Sadly the sign next to it says 'ORRIN'S' too. Long story."
+
+villager_b:
+  npc: villager_orrin
+  speaker: Orrin
+  lines:
+    - "My shop used to have a sign. Now it has a very confident empty rectangle."
+    - "Customers keep walking in and asking what I sell. I sell... a sign. I think."
+
+villager_c_after:
+  npc: villager_dill
+  speaker: Dill
+  requires: ["solved:ch1-b"]
+  lines:
+    - "Everything has its name back! Even the goat! Especially the goat. He's insufferable."
+
+villager_c:
+  npc: villager_dill
+  speaker: Dill
+  lines:
+    - "Do you know what I'm called? I've been answering to 'hey, you' since Tuesday."
+    - "It's fine. 'You' is a good name. Short. Easy to spell."
+  choices:
+    - text: "It suits you."
+    - text: "(Say nothing.)"
+
+# ---- The lamplighter (1-02, optional) -----------------------------------------------------
+lamplighter_after:
+  npc: lamplighter
+  speaker: Lamplighter
+  requires: ["solved:ch1-02"]
+  lines:
+    - "Three, plus two, plus four. The count holds. The lamps hold. I hold a ladder, mostly."
+
+lamplighter:
+  npc: lamplighter
+  speaker: Lamplighter
+  lines:
+    - "I light lamps. Three now. I lit two more, so... I've lost the number."
+    - "The Null took the tally off my slate. If a lamp count could be kept somewhere, and changed..."
+    - "Optional, mind. Nobody's forcing you up this ladder. I'd go first, but I'm afraid of heights."
+
+# ---- The toll keeper (1-03) ---------------------------------------------------------------
+toll_after:
+  npc: toll_keeper
+  speaker: "Toll keeper"
+  requires: ["solved:ch1-03"]
+  lines:
+    - "Thirty-three coins, exactly. No literal 33 in your spell, either. I checked. I check everything."
+
+toll:
+  npc: toll_keeper
+  speaker: "Toll keeper"
+  lines:
+    - "Four carts. Seven coins a cart. Plus a five-coin fee for the bridge's feelings."
+    - "I used to know the total. The Null ate it. Work it out, and let the Terminal do the sums."
+    - "And no, you can't just write the answer down. I'll know. It's in the contract."
+
+# ---- Ferryman (1-05): echoes the player's output ------------------------------------------
+ferryman_after:
+  npc: ferryman
+  speaker: Ferryman
+  requires: ["solved:ch1-05"]
+  lines:
+    - "'Welcome aboard.' I said that? Hm. It sounded better the second time."
+    - "Your words came out of my mouth. Do not make a habit of it."
+
+ferryman:
+  npc: ferryman
+  speaker: Ferryman
+  lines:
+    - "WHO RIDES?"
+    - "(He waits. The river waits. Even the fish seem to be listening.)"
+    - "I forgot every name I ever knew. Say one, and I'll say it back."
+
+# ---- Town crier (1-06) --------------------------------------------------------------------
+crier_after:
+  npc: town_crier
+  speaker: "Town crier"
+  requires: ["solved:ch1-06"]
+  lines:
+    - "HEAR YE, HEAR YE! IN CAPITALS! WITH A LENGTH! I FEEL LIKE A NEW PERSON!"
+
+crier:
+  npc: town_crier
+  speaker: "Town crier"
+  lines:
+    - "(He opens his mouth. A tiny, lowercase squeak escapes.)"
+    - "Nnn. I can't shout anymore. The Null took my CAPITALS. And my count of letters."
+    - "Give me a name and I'll... squeak it. A spell could do better."
+
+# ---- Quill, in the chapel ---------------------------------------------------------------
+quill_after_boss:
+  npc: quill
+  speaker: Quill
+  requires: ["solved:ch1-b"]
+  lines:
+    - "Your banner is on the Hall wall; every letter of it is YOURS;"
+    - "I'll be the voice of the altars from here on. I'll be loud. Politely;"
+
+quill_receipt:
+  npc: quill
+  speaker: Quill
+  requires: ["solved:ch1-07"]
+  lines:
+    - "Tally's receipt reads beautifully. Shall we try a harder spell? One with feelings, perhaps;"
+    - "Grubble waits in the Hall of Echoes. The lecterns are at the far end. Stay on your toes;"
+
+quill_editor_moves:
+  npc: quill
+  speaker: Quill
+  requires: [met_quill, "solved:ch1-05"]
+  lines:
+    - "Three moves to teach you before the Inn;"
+    - "`A` puts you at the END of the line, in INSERT. `o` opens a fresh line below. `0` and `$` jump to the start and end."
+    - "Sorry: the semicolon. Habit. Where was I? Oh, yes. `Esc`. Always `Esc`."
+
+quill_repeat:
+  npc: quill
+  speaker: Quill
+  requires: [met_quill]
+  lines:
+    - "When in doubt, Escape. It's the first proverb of the Modal Order, and the last one I have;"
+
+quill_intro:
+  npc: quill
+  speaker: Quill
+  once: true
+  requires: ["entered:echo_vale"]
+  sets: [met_quill]
+  lines:
+    - "In person at last! Quill, altar-keeper. You are Wren. Pell's apprentice. We spoke across the hill;"
+    - "Echo Vale repeats whatever is spoken here. Then the Null took the names. Now it repeats NOTHING."
+    - "Murmurby is a ghost of a town. Light the name-stone and we begin to speak again;"
+  choices:
+    - text: "Lead on."
+    - text: "You ended that with a semicolon."
+      sets: [teased_quill]
+
+# ---- Tally, Crossroads Inn ----------------------------------------------------------------
+tally_after_boss:
+  npc: tally
+  speaker: Tally
+  requires: ["solved:ch1-b"]
+  lines:
+    - "One banner. Four hundred and two Echo Vale signs, all lit. A very good day. I counted."
+    - "Shop's always open to you. The potions don't expire. I checked. Twice."
+
+tally_shop:
+  npc: tally
+  speaker: Tally
+  requires: ["solved:ch1-07"]
+  sets: [shop_open]
+  lines:
+    - "THREE potions, thirty-six coins. And the receipt's right! That's the first right receipt in weeks!"
+    - "The shop is open. Spend your coins. One at a time. I'll count."
+
+tally_receipt:
+  npc: tally
+  speaker: Tally
+  requires: [met_tally]
+  lines:
+    - "I need a receipt. Quantity times twelve coins each. 'N potions cost M coins.'"
+    - "Read the quantity from stdin, and don't forget to turn the text into a number first."
+    - "One, two, three. I'll be here. I'm always here. I live here."
+
+tally_intro:
+  npc: tally
+  speaker: Tally
+  once: true
+  requires: ["entered:echo_vale"]
+  sets: [met_tally]
+  lines:
+    - "One traveller. Two bags. Three, four, FIVE hundred hairs, if I counted. Welcome to the Crossroads Inn!"
+    - "I'm Tally. I count everything. Out loud. It's a condition."
+    - "The Null took my prices, and the shop board's blank. I can't sell a potion without a total."
+  choices:
+    - text: "How many potions do you have?"
+      sets: [asked_potions]
+    - text: "Please stop counting me."
+
+# ---- Cole at the waystones ----------------------------------------------------------------
+cole_cross_after:
+  npc: cole_crossroads
+  speaker: Cole
+  requires: ["solved:ch1-b"]
+  lines:
+    - ":ahem. A second seal, and a first chapter. Type `:ledger`; read what you've sealed."
+    - "That list is `git log`, if you're a scribe. Each seal has a name. Each name is a promise."
+
+cole_cross:
+  npc: cole_crossroads
+  speaker: Cole
+  requires: [cole_map_told]
+  lines:
+    - ":ahem. Seal often. `:save` writes the seal. `:ledger` reads the seals back."
+    - "And `:map` still shows every altar. Lit or not."
+
+cole_crossroads_intro:
+  npc: cole_crossroads
+  speaker: Cole
+  once: true
+  requires: ["entered:echo_vale"]
+  sets: [cole_map_told]
+  lines:
+    - ":ahem. The Crossroads waystone. A fine place for a seal, if I say so myself."
+    - "Press `:map` and you'll see every altar in Echo Vale. Lit ones glow. Dark ones wait politely."
+    - "Press `:save` to set a seal. Every spell you've written goes into the Ledger."
+    - "Scribes call that `git commit`. I call it a tiny act of faith."
+
+cole_murmurby_after:
+  npc: cole_murmurby
+  speaker: Cole
+  requires: [cole_met_murmurby]
+  lines:
+    - ":ahem. `:save`, then `:map`. In that order. Or the other order. I'm a herald, not a cop."
+
+cole_murmurby:
+  npc: cole_murmurby
+  speaker: Cole
+  once: true
+  requires: ["entered:echo_vale"]
+  sets: [cole_met_murmurby]
+  lines:
+    - ":ahem. Murmurby's waystone. Welcome, Wren."
+    - "Two new words for you: `:save` seals your work in the Ledger."
+    - "And `:map` draws the vale. You'll want that when the road forks."
+    - "Please don't `:q` in front of the villagers. They have feelings. I have more."
+  choices:
+    - text: "Understood."
+    - text: ":q?"
+      sets: [asked_q_again]
+
+# ---- Grubble, the Typo King ---------------------------------------------------------------
+grubble_defeated:
+  npc: grubble
+  speaker: Grubble
+  requires: ["solved:ch1-b"]
+  lines:
+    - "(A neat pile of letters, sorted alphabetically. One of them is a tiny crown.)"
+    - "...wuz...a...gud...king..."
+
+grubble_intro:
+  npc: grubble
+  speaker: "Grubble, the Typo King"
+  once: true
+  requires: ["entered:echo_vale"]
+  sets: [grubble_declared]
+  lines:
+    - "BEHOLD! I, GRUBBLE, KING OF TYPOS, RULER OF ALL THAT IS MISSPELT!"
+    - "I have ate your signs, your numbers, and your prices. They were delishus."
+    - "Come, 'scribe'! Fix my proclamation, if you dair!"
+  choices:
+    - text: "It's 'dare'."
+      sets: [corrected_grubble]
+    - text: "(Draw your quill.)"
+
+# ---- Pell, first word ---------------------------------------------------------------------
+pell_ch1_word:
+  npc: pell_ch1
+  speaker: Pell
+  once: true
+  requires: ["solved:ch1-b"]
+  sets: [pell_word1]
+  lines:
+    - "(The grey outline flickers. Something like colour pools at its edge.)"
+    - "...Wren."
+    - "(That's all. It is enough. It is the first thing Pell has said that was not 'None.')"
+
+pell_ch1_after:
+  npc: pell_ch1
+  speaker: Pell
+  requires: [pell_word1]
+  lines:
+    - "...Wren."
+    - "(Pell is still working on the rest. You wait. You are good at waiting; you were raised by a copyist.)"
+
+pell_ch1:
+  npc: pell_ch1
+  speaker: "None"
+  lines:
+    - "None."
+    - "(The outline's quill is pointed at the ground. It is drawing a very small, very hopeful 'w'.)"
