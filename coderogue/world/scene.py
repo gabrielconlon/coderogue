@@ -1,0 +1,276 @@
+"""The real-time world scene: map, player, enemies, altars, camera and VIM-key input."""
+
+from __future__ import annotations
+
+from collections.abc import Callable
+from pathlib import Path
+from typing import TYPE_CHECKING
+
+import pygame
+
+from coderogue.entities import sprites
+from coderogue.entities.altar import Altar
+from coderogue.entities.base import Entity, StaticProp
+from coderogue.entities.enemies import Wanderer
+from coderogue.entities.player import Player
+from coderogue.input.keymap import MOVE_ACTIONS, Action, Keymap
+from coderogue.input.modes import Mode, ModeMachine
+from coderogue.scene import Scene
+from coderogue.ui.text import draw_text
+from coderogue.world.camera import Camera
+from coderogue.world.collision import boxes_overlap
+from coderogue.world.loader import MapObject
+from coderogue.world.tilemap import TileMap
+
+if TYPE_CHECKING:
+    from coderogue.app import Game
+
+VIEW_SIZE = (320, 180)  # world pixels shown; scaled 3x to the 960x540 logical surface
+BG_COLOR = (20, 16, 24)
+
+PROP_SPRITES = {"npc": sprites.KNIGHT, "chest": sprites.CHEST}
+
+
+def _tile_prop(obj: MapObject, default: int | None) -> int | None:
+    value = obj.properties.get("tile", obj.properties.get("sprite", default))
+    return int(value) if value is not None else None
+
+
+class WorldScene(Scene):
+    """Top-down real-time play in NORMAL mode.
+
+    Set ``altar_handler`` (or override :meth:`on_altar`) to open the editor when the player
+    presses INTERACT at an altar.
+    """
+
+    def __init__(self, game: Game, map_path: str | Path, keymap: Keymap | None = None) -> None:
+        super().__init__(game)
+        self.map_path = Path(map_path)
+        self.tilemap = TileMap.load(self.map_path)
+        self.collision = self.tilemap.collision
+        arrows = bool(getattr(game, "arrows_fallback", False))
+        self.keymap = keymap or Keymap.default(arrows_fallback=arrows)
+        self.modes = ModeMachine()
+        self.held: list[Action] = []  # held move actions, in press order
+        self.view = pygame.Surface(VIEW_SIZE).convert() if pygame.display.get_surface() else (
+            pygame.Surface(VIEW_SIZE)
+        )
+        self.camera = Camera(
+            VIEW_SIZE[0], VIEW_SIZE[1], self.tilemap.pixel_width, self.tilemap.pixel_height
+        )
+        self.enemies: list[Wanderer] = []
+        self.altars: list[Altar] = []
+        self.props: list[Entity] = []
+        self.altar_handler: Callable[[Altar], None] | None = None
+        self.show_debug = True
+        self.message = ""
+        self.message_time = 0.0
+        self.player = self._spawn_entities()
+        self.camera.follow(*self.player.center)
+
+    # ---- setup ------------------------------------------------------------------------
+    def _spawn_entities(self) -> Player:
+        data = self.tilemap.data
+        spawn = data.first_object("player_spawn")
+        player = Player(0, 0, sprites.sheet_tile(sprites.HERO))
+        if spawn is not None:
+            player.place_center(*spawn.center)
+        else:
+            player.place_center(self.tilemap.pixel_width / 2, self.tilemap.pixel_height / 2)
+        self.spawn_point = player.center
+        for obj in data.objects:
+            if obj.type == "altar":
+                tile = _tile_prop(obj, sprites.ALTAR)
+                altar = Altar(
+                    obj.x, obj.y, sprites.sheet_tile(tile) if tile is not None else None,
+                    name=obj.name, properties=obj.properties,
+                )
+                self.altars.append(altar)
+            elif obj.type == "enemy":
+                tile = _tile_prop(obj, sprites.RED_SPIDER)
+                enemy = Wanderer(
+                    0, 0, sprites.sheet_tile(tile) if tile is not None else None,
+                    hp=int(obj.properties.get("hp", 3)),
+                    speed=float(obj.properties.get("speed", 30.0)),
+                    name=obj.name, properties=obj.properties,
+                )
+                enemy.place_center(*obj.center)
+                self.enemies.append(enemy)
+            elif obj.type in ("npc", "chest", "door"):
+                tile = _tile_prop(obj, PROP_SPRITES.get(obj.type))
+                sprite = sprites.sheet_tile(tile) if tile is not None else None
+                self.props.append(
+                    StaticProp(obj.x, obj.y, sprite, name=obj.name, properties=obj.properties)
+                )
+        return player
+
+    # ---- input ------------------------------------------------------------------------
+    def move_vector(self) -> tuple[int, int]:
+        """Sum of held move directions (each axis clamped to -1..1)."""
+        dx = dy = 0
+        for action in self.held:
+            mx, my = MOVE_ACTIONS[action]
+            dx += mx
+            dy += my
+        return (max(-1, min(1, dx)), max(-1, min(1, dy)))
+
+    def handle_event(self, event: pygame.event.Event) -> None:
+        """Translate key events to actions according to the current mode."""
+        if event.type == pygame.WINDOWFOCUSLOST:
+            self.held.clear()
+            return
+        if event.type == pygame.KEYUP:
+            action = self.keymap.action_for_key(event.key)
+            if action in MOVE_ACTIONS and action in self.held:
+                self.held.remove(action)
+            return
+        if event.type != pygame.KEYDOWN:
+            return
+        if self.modes.mode is Mode.COMMAND:
+            self._command_key(event)
+            return
+        unicode = getattr(event, "unicode", "")
+        if unicode and self.modes.feed_digit(unicode):
+            return
+        action = self.keymap.action_for_key(event.key, unicode)
+        if action is not None:
+            self.do_action(action)
+
+    def do_action(self, action: Action) -> None:
+        """Perform a NORMAL-mode action (consumes any pending count)."""
+        player = self.player
+        if action in MOVE_ACTIONS:
+            count = self.modes.pending_count
+            if count is not None:
+                self.modes.clear_count()
+                player.dash_toward(MOVE_ACTIONS[action], count)
+            elif action not in self.held:
+                self.held.append(action)
+        elif action is Action.ATTACK:
+            player.attack(self.modes.take_count())
+        elif action in (Action.DASH_FWD, Action.DASH_BACK):
+            tiles = self.modes.pending_count
+            self.modes.clear_count()
+            player.dash(forward=action is Action.DASH_FWD, tiles=tiles)
+        elif action is Action.INTERACT:
+            self.modes.clear_count()
+            altar = self.altar_in_reach()
+            if altar is not None:
+                self.on_altar(altar)
+        elif action is Action.ESCAPE:
+            self.modes.escape()
+        elif action is Action.COMMAND:
+            self.modes.set_mode(Mode.COMMAND)
+        elif action is Action.DEBUG:
+            self.show_debug = not self.show_debug
+        else:
+            self.modes.clear_count()
+
+    def _command_key(self, event: pygame.event.Event) -> None:
+        if event.key == pygame.K_ESCAPE:
+            self.modes.escape()
+        elif event.key == pygame.K_BACKSPACE:
+            self.modes.command_backspace()
+        elif event.key in (pygame.K_RETURN, pygame.K_KP_ENTER):
+            self.run_command(self.modes.command_submit())
+        elif event.unicode and event.unicode.isprintable():
+            self.modes.command_type(event.unicode)
+
+    def run_command(self, command: str) -> None:
+        """Execute a ``:`` command typed in the world."""
+        if command in ("q", "quit", "q!", "qa"):
+            self.game.quit()
+        elif command == "set arrows":
+            self.keymap = Keymap.default(arrows_fallback=True)
+            self.flash("arrow keys + WASD enabled")
+        elif command == "set noarrows":
+            self.keymap = Keymap.default(arrows_fallback=False)
+            self.flash("VIM keys only")
+        elif command == "debug":
+            self.show_debug = not self.show_debug
+        elif command:
+            self.flash(f"E492: Not an editor command: {command}")
+
+    def flash(self, text: str, seconds: float = 2.5) -> None:
+        """Show a short message at the bottom of the screen."""
+        self.message = text
+        self.message_time = seconds
+
+    # ---- altars -----------------------------------------------------------------------
+    def altar_in_reach(self) -> Altar | None:
+        """The altar whose interaction zone the player overlaps, if any."""
+        for altar in self.altars:
+            if boxes_overlap(self.player.box, altar.interact_box()):
+                return altar
+        return None
+
+    def on_altar(self, altar: Altar) -> None:
+        """Player interacted with ``altar``. Stub until the editor scene exists."""
+        self.held.clear()
+        if self.altar_handler is not None:
+            self.altar_handler(altar)
+            return
+        print(f"[altar] {altar.name or 'altar'} (puzzle={altar.puzzle!r})")
+        self.flash(f"The altar hums: {altar.puzzle or '...'}")
+
+    # ---- simulation -------------------------------------------------------------------
+    def update(self, dt: float) -> None:
+        """One fixed step: player, enemies, combat, camera."""
+        player = self.player
+        move = self.move_vector() if self.modes.mode is Mode.NORMAL else (0, 0)
+        player.update(dt, self, move=move)
+        for altar in self.altars:
+            altar.update(dt, self)
+        for enemy in self.enemies:
+            enemy.update(dt, self)
+            if enemy.alive and boxes_overlap(player.box, enemy.box):
+                player.hurt(enemy.contact_damage, enemy.center)
+        box = player.attack_box()
+        if box is not None:
+            for enemy in self.enemies:
+                key = id(enemy)
+                if key not in player.struck and boxes_overlap(box, enemy.box):
+                    player.struck.add(key)
+                    enemy.hurt(1, player.center)
+        self.enemies = [e for e in self.enemies if e.alive]
+        if player.hp <= 0:
+            player.hp = player.max_hp
+            player.place_center(*self.spawn_point)
+            self.flash("You wake at the spawn point.")
+        if self.message_time > 0:
+            self.message_time -= dt
+        self.camera.follow(*player.center)
+
+    # ---- rendering --------------------------------------------------------------------
+    def draw(self, surface: pygame.Surface) -> None:
+        """Render the world at 1x into the view, scale 3x nearest-neighbour, then overlay text."""
+        view = self.view
+        view.fill(BG_COLOR)
+        offset = self.camera.offset
+        self.tilemap.draw_below(view, offset)
+        entities: list[Entity] = [*self.props, *self.altars, *self.enemies, self.player]
+        for ent in sorted(entities, key=lambda e: e.bottom):
+            ent.draw(view, offset)
+        self.tilemap.draw_above(view, offset)
+        pygame.transform.scale(view, surface.get_size(), surface)
+        self._draw_overlay(surface)
+
+    def _draw_overlay(self, surface: pygame.Surface) -> None:
+        w, h = surface.get_size()
+        if self.show_debug:
+            px, py = self.player.center
+            fps = self.game.clock.get_fps() if hasattr(self.game, "clock") else 0.0
+            count = self.modes.count_text
+            line = (
+                f"FPS {fps:5.1f}  -- {self.modes.mode.value} --"
+                f"{'  ' + count if count else ''}  pos {px:6.1f},{py:6.1f}"
+                f"  hp {self.player.hp}/{self.player.max_hp}"
+            )
+            draw_text(surface, line, (8, 6), size=14)
+        if self.modes.mode is Mode.COMMAND:
+            pygame.draw.rect(surface, (0, 0, 0), (0, h - 26, w, 26))
+            draw_text(surface, ":" + self.modes.command_buffer + "_", (8, h - 22), size=16)
+        elif self.message_time > 0 and self.message:
+            draw_text(surface, self.message, (8, h - 24), size=16)
+        elif self.altar_in_reach() is not None:
+            draw_text(surface, "i / Enter: use altar", (8, h - 24), size=16, color=(160, 240, 200))

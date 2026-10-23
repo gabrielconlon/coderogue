@@ -1,15 +1,231 @@
-"""CodeRogue entry point. The real loop lands in Phase 1; this boots a window and exits."""
+"""CodeRogue entry point: game loop, scene stack, window scaling and ``resource_path``."""
 
 from __future__ import annotations
 
+import argparse
+import os
 import sys
+from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from coderogue.scene import Scene
+
+LOGICAL_SIZE = (960, 540)
+UPDATE_HZ = 60
+FIXED_DT = 1.0 / UPDATE_HZ
+MAX_FRAME_TIME = 0.25  # clamp after stalls (window drag, breakpoint) to avoid a spiral
+MAX_STEPS_PER_FRAME = 5
+DEFAULT_MAP = ("content", "maps", "test_room.tmj")
+TITLE = "CodeRogue"
+
+REPO_ROOT = Path(__file__).resolve().parent.parent
+
+
+def resource_path(*parts: str) -> Path:
+    """Absolute path to a bundled resource (repo root, or ``sys._MEIPASS`` when frozen)."""
+    base = getattr(sys, "_MEIPASS", None)
+    root = Path(base) if base else REPO_ROOT
+    return root.joinpath(*parts)
+
+
+def letterbox_rect(window: tuple[int, int], logical: tuple[int, int]) -> tuple[int, int, int, int]:
+    """Where to draw ``logical`` inside ``window``: integer scale if it fits, else best fit.
+
+    Returns (x, y, w, h), centred.
+    """
+    ww, wh = window
+    lw, lh = logical
+    iscale = min(ww // lw, wh // lh)
+    if iscale >= 1:
+        w, h = lw * iscale, lh * iscale
+    else:
+        s = min(ww / lw, wh / lh)
+        w, h = max(1, int(lw * s)), max(1, int(lh * s))
+    return ((ww - w) // 2, (wh - h) // 2, w, h)
+
+
+class Game:
+    """Owns the window, the clock and the scene stack, and runs the fixed-timestep loop.
+
+    Updates run at exactly ``UPDATE_HZ`` using an accumulator; rendering happens once per
+    loop iteration. Scenes draw on ``self.surface`` (960x540), which is scaled to the window
+    with nearest-neighbour and letterboxed.
+    """
+
+    def __init__(self, headless: bool = False, title: str = TITLE) -> None:
+        import pygame
+
+        self.headless = headless
+        pygame.init()
+        pygame.display.set_caption(title)
+        flags = 0 if headless else pygame.RESIZABLE
+        self.window = pygame.display.set_mode(LOGICAL_SIZE, flags)
+        self.surface = pygame.Surface(LOGICAL_SIZE).convert()
+        self.clock = pygame.time.Clock()
+        self.scenes: list[Scene] = []
+        self.running = False
+        self.frame = 0
+        self.time = 0.0  # simulated seconds
+        self.arrows_fallback = False
+
+    # ---- scene stack ------------------------------------------------------------------
+    @property
+    def scene(self) -> Scene | None:
+        """The top scene, or None if the stack is empty."""
+        return self.scenes[-1] if self.scenes else None
+
+    def push(self, scene: Scene) -> None:
+        """Push ``scene`` on top; it gets events and updates until popped."""
+        self.scenes.append(scene)
+        scene.on_enter()
+
+    def pop(self) -> Scene | None:
+        """Pop the top scene. The game stops when the stack becomes empty."""
+        if not self.scenes:
+            return None
+        scene = self.scenes.pop()
+        scene.on_exit()
+        if self.scenes:
+            self.scenes[-1].on_resume()
+        else:
+            self.running = False
+        return scene
+
+    def replace(self, scene: Scene) -> None:
+        """Swap the top scene for ``scene``."""
+        if self.scenes:
+            self.scenes.pop().on_exit()
+        self.push(scene)
+
+    def quit(self) -> None:
+        """Stop the loop at the end of the current frame."""
+        self.running = False
+
+    # ---- loop -------------------------------------------------------------------------
+    def step(self, dt: float = FIXED_DT) -> None:
+        """Run one fixed update on the top scene."""
+        if self.scene is not None:
+            self.scene.update(dt)
+        self.time += dt
+
+    def draw(self) -> None:
+        """Draw visible scenes to the logical surface and present it."""
+        import pygame
+
+        self.surface.fill((0, 0, 0))
+        start = len(self.scenes) - 1
+        while start > 0 and self.scenes[start].transparent:
+            start -= 1
+        for scene in self.scenes[max(start, 0) :]:
+            scene.draw(self.surface)
+        self.present()
+        pygame.display.flip()
+
+    def present(self) -> None:
+        """Scale the logical surface into the window (nearest-neighbour, letterboxed)."""
+        import pygame
+
+        win = pygame.display.get_surface()
+        if win is None:
+            return
+        size = win.get_size()
+        if size == LOGICAL_SIZE:
+            win.blit(self.surface, (0, 0))
+            return
+        x, y, w, h = letterbox_rect(size, LOGICAL_SIZE)
+        win.fill((0, 0, 0))
+        win.blit(pygame.transform.scale(self.surface, (w, h)), (x, y))
+
+    def window_to_logical(self, pos: tuple[int, int]) -> tuple[int, int]:
+        """Map a window pixel (mouse) to logical coordinates."""
+        import pygame
+
+        win = pygame.display.get_surface()
+        size = win.get_size() if win else LOGICAL_SIZE
+        x, y, w, h = letterbox_rect(size, LOGICAL_SIZE)
+        return ((pos[0] - x) * LOGICAL_SIZE[0] // w, (pos[1] - y) * LOGICAL_SIZE[1] // h)
+
+    def run(self, max_frames: int | None = None) -> int:
+        """Run until quit (or ``max_frames`` rendered frames). Returns an exit code."""
+        import pygame
+
+        self.running = True
+        accumulator = 0.0
+        self.clock.tick()
+        while self.running and self.scenes:
+            if self.headless:
+                self.clock.tick()
+                frame_time = FIXED_DT  # deterministic and as fast as possible
+            else:
+                frame_time = min(self.clock.tick(UPDATE_HZ) / 1000.0, MAX_FRAME_TIME)
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    self.running = False
+                elif self.scene is not None:
+                    self.scene.handle_event(event)
+            accumulator += frame_time
+            steps = 0
+            while accumulator >= FIXED_DT - 1e-9 and steps < MAX_STEPS_PER_FRAME:
+                self.step(FIXED_DT)
+                accumulator -= FIXED_DT
+                steps += 1
+            if steps == MAX_STEPS_PER_FRAME:
+                accumulator = 0.0
+            if not self.scenes:
+                break
+            self.draw()
+            self.frame += 1
+            if max_frames is not None and self.frame >= max_frames:
+                break
+        return 0
+
+
+def _resolve_map(path: str | None) -> Path:
+    if path is None:
+        return resource_path(*DEFAULT_MAP)
+    p = Path(path)
+    if p.exists():
+        return p.resolve()
+    return resource_path(path)
+
+
+def build_parser() -> argparse.ArgumentParser:
+    """Command-line arguments for ``python -m coderogue``."""
+    parser = argparse.ArgumentParser(prog="coderogue", description="CodeRogue")
+    parser.add_argument(
+        "--headless-frames",
+        type=int,
+        metavar="N",
+        help="run N frames with the dummy video driver and exit (smoke tests)",
+    )
+    parser.add_argument("--map", metavar="PATH", help="Tiled .tmj map to load")
+    parser.add_argument(
+        "--arrows", action="store_true", help="also bind arrow keys and WASD (fallback)"
+    )
+    return parser
 
 
 def main(argv: list[str] | None = None) -> int:
-    argv = sys.argv[1:] if argv is None else argv
+    """Entry point. Returns a process exit code."""
+    args = build_parser().parse_args(sys.argv[1:] if argv is None else argv)
+    headless = args.headless_frames is not None
+    if headless:
+        os.environ["SDL_VIDEODRIVER"] = "dummy"
+        os.environ["SDL_AUDIODRIVER"] = "dummy"
     import pygame
 
-    pygame.init()
-    print(f"CodeRogue bootstrap. pygame-ce {pygame.version.ver}")
-    pygame.quit()
-    return 0
+    from coderogue.world.scene import WorldScene
+
+    map_path = _resolve_map(args.map)
+    game = Game(headless=headless)
+    game.arrows_fallback = args.arrows
+    try:
+        game.push(WorldScene(game, map_path))
+        return game.run(max_frames=args.headless_frames if headless else None)
+    finally:
+        pygame.quit()
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
