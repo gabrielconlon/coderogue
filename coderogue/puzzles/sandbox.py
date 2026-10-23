@@ -151,7 +151,7 @@ def _collect_files(root: Path, skip: str) -> dict[str, str]:
                 data = fh.read(MAX_CAPTURED_FILE_BYTES)
         except OSError:
             continue
-        out[rel] = data.decode("utf-8", errors="replace").replace("\r\n", "\n")
+        out[rel] = data.decode("utf-8-sig", errors="replace").replace("\r\n", "\n")
     return out
 
 
