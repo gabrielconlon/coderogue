@@ -1,0 +1,76 @@
+id: ch1-01
+title: The Blank Name-Stone
+chapter: 1
+order: 1
+optional: false
+concepts: [variables, assignment, string-concatenation]
+vim_skill: "w and b (hop between words in the editor)"
+lore: |
+  Murmurby's name-stone stands blank at the town gate. The Null has left the
+  townsfolk so forgetful that the mayor now welcomes visitors to "Town, Probably".
+  Carve the name into a variable once, then let the welcome sign speak from it.
+  Quill, from the chapel steeple: "A name written once may be spoken a thousand times!"
+limits: {timeout_s: 2, max_stdout_kb: 16}
+languages:
+  python:
+    starter: |
+      # The stone is blank. Carve the town's name into a variable called village,
+      # then let the welcome sign use that variable.
+      village = ___
+      print("Welcome to " + ___)
+    hints:
+      - &stone_h1 "The sign must say 'Welcome to Murmurby', but the name should live in one named place, a variable called village, and the sign should read it from there."
+      - "Python makes a variable with =, like village = \"text\". To glue text together, use +, like \"Hi \" + village."
+      - "First blank: \"Murmurby\" (with quotes)   Second blank: village   (no quotes, because it is a variable, not words)"
+    solution: |
+      village = "Murmurby"
+      print("Welcome to " + village)
+    source_checks:
+      - pattern: '\bvillage\s*='
+        message: "The Terminal wants to see a variable called village carved with =."
+      - pattern: '(?s)\bvillage\s*=.*\bvillage\b'
+        message: "The output is right, but the Terminal wants to see the variable village do the work in the welcome."
+  bash:
+    starter: |
+      # The stone is blank. Carve the town's name into a variable called village,
+      # then let the welcome sign use that variable.
+      village=___
+      echo "Welcome to ___"
+    hints:
+      - *stone_h1
+      - "In bash a variable is made as village=\"text\" with NO spaces around the =. To read it back, put a $ in front: $village."
+      - "First blank: \"Murmurby\" (with quotes)   Second blank: $village   Keep the double quotes around the echo text so $village is filled in."
+    solution: |
+      village="Murmurby"
+      echo "Welcome to $village"
+    source_checks:
+      - pattern: '\bvillage='
+        message: "The Terminal wants to see a variable called village carved with village=... (no spaces around the =)."
+      - pattern: '(?s)\bvillage=.*\$\{?village\b'
+        message: "The output is right, but the Terminal wants to see $village do the work in the welcome."
+  powershell:
+    starter: |
+      # The stone is blank. Carve the town's name into a variable called $village,
+      # then let the welcome sign use that variable.
+      $village = ___
+      Write-Output "Welcome to ___"
+    hints:
+      - *stone_h1
+      - "A PowerShell variable starts with $, like $village = \"text\". Inside double quotes, $village is replaced by its value."
+      - "First blank: \"Murmurby\" (with quotes)   Second blank: $village   Keep the double quotes so the value is filled in."
+    solution: |
+      $village = "Murmurby"
+      Write-Output "Welcome to $village"
+    source_checks:
+      - pattern: '\$village\s*='
+        message: "The Terminal wants to see a variable called $village carved with =."
+      - pattern: '(?s)\$village\s*=.*\$village\b'
+        message: "The output is right, but the Terminal wants to see $village do the work in the welcome."
+tests:
+  - name: "The stone speaks its name"
+    expect: {stdout: "Welcome to Murmurby\n", exit_code: 0}
+reward:
+  xp: 20
+  items: [chalk_stub]
+  unlocks: []
+  world_effect: "The name-stone at Murmurby's gate fills in, letter by letter, and the gate bell hums."

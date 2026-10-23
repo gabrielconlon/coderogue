@@ -1,0 +1,76 @@
+id: ch1-02
+title: The Lamplighter's Tally
+chapter: 1
+order: 2
+optional: true
+concepts: [reassignment, state, arithmetic]
+vim_skill: "e (land on the far edge of a word)"
+lore: |
+  The lamplighter of Murmurby walks the lane muttering numbers, because the
+  Null stole the one he kept in his head. He starts with 3 lit lamps, lights
+  2 more, and wants the count read out. Then he lights 4 more, and wants it
+  read out again. "Same number," he sighs, "different day. Different number."
+limits: {timeout_s: 2, max_stdout_kb: 16}
+languages:
+  python:
+    starter: |
+      lamps = 3
+      lamps = lamps + 2
+      print(lamps)
+      # Four more lamps get lit. Update lamps, then print it again.
+      lamps = lamps + ___
+      print(lamps)
+    hints:
+      - &lamp_h1 "A variable can change. After lighting more lamps, the same name should hold the new, bigger number. Print it again."
+      - "Reassign with the variable on both sides: lamps = lamps + 2 reads the old value, adds 2, and stores the result back."
+      - "The second update is the same shape as the first. Blank: 4"
+    solution: |
+      lamps = 3
+      lamps = lamps + 2
+      print(lamps)
+      lamps = lamps + 4
+      print(lamps)
+  bash:
+    starter: |
+      lamps=3
+      lamps=$((lamps + 2))
+      echo "$lamps"
+      # Four more lamps get lit. Update lamps, then echo it again.
+      lamps=$((lamps + ___))
+      echo "$lamps"
+    hints:
+      - *lamp_h1
+      - "Reassign with $(( )): lamps=$((lamps + 2)) reads the old value, adds 2, and stores the result back. Inside $(( )) you don't need a $ on the name."
+      - "The second update is the same shape as the first. Blank: 4"
+    solution: |
+      lamps=3
+      lamps=$((lamps + 2))
+      echo "$lamps"
+      lamps=$((lamps + 4))
+      echo "$lamps"
+  powershell:
+    starter: |
+      $lamps = 3
+      $lamps = $lamps + 2
+      Write-Output $lamps
+      # Four more lamps get lit. Update $lamps, then print it again.
+      $lamps = $lamps + ___
+      Write-Output $lamps
+    hints:
+      - *lamp_h1
+      - "Reassign with the variable on both sides: $lamps = $lamps + 2 reads the old value, adds 2, and stores the result back."
+      - "The second update is the same shape as the first. Blank: 4"
+    solution: |
+      $lamps = 3
+      $lamps = $lamps + 2
+      Write-Output $lamps
+      $lamps = $lamps + 4
+      Write-Output $lamps
+tests:
+  - name: "Two readouts, 5 then 9"
+    expect: {stdout: "5\n9\n", exit_code: 0}
+reward:
+  xp: 20
+  items: [spare_wick]
+  unlocks: []
+  world_effect: "Lamps along Murmurby's lane flicker on one by one, and the lamplighter tips his hat."

@@ -1,0 +1,77 @@
+id: ch1-04
+title: Apples for Five Baskets
+chapter: 1
+order: 4
+optional: false
+concepts: [integer-division, remainder, arithmetic]
+vim_skill: "o (open a new line below)"
+lore: |
+  The orchard is heavy with 47 apples and the Leaks are circling. Five
+  baskets wait beneath the tree, and the orchardkeeper insists on fairness:
+  every basket gets the same number of apples, and whatever will not divide
+  goes to the keeper's pie. "Whole apples only," she warns. "No halves. I
+  have seen what happens to halves."
+limits: {timeout_s: 2, max_stdout_kb: 16}
+languages:
+  python:
+    starter: |
+      apples = 47
+      baskets = 5
+      # Whole apples per basket, then the apples that don't fit evenly.
+      each = apples ___ baskets
+      left = apples ___ baskets
+      print(f"{each} each, {left} left over")
+    hints:
+      - &apple_h1 "You need two different answers from the same division: how many whole times 5 fits into 47, and what is left afterwards."
+      - "Python has two operators for this: // gives the whole-number quotient and % gives the remainder. 7 // 2 is 3 and 7 % 2 is 1."
+      - "First blank: //   Second blank: %"
+    solution: |
+      apples = 47
+      baskets = 5
+      each = apples // baskets
+      left = apples % baskets
+      print(f"{each} each, {left} left over")
+  bash:
+    starter: |
+      apples=47
+      baskets=5
+      # Whole apples per basket, then the apples that don't fit evenly.
+      each=$((apples ___ baskets))
+      left=$((apples ___ baskets))
+      echo "$each each, $left left over"
+    hints:
+      - *apple_h1
+      - "bash integer math inside $(( )) drops the fraction: / gives the whole-number quotient and % gives the remainder. $((7 / 2)) is 3 and $((7 % 2)) is 1."
+      - "First blank: /   Second blank: %"
+    solution: |
+      apples=47
+      baskets=5
+      each=$((apples / baskets))
+      left=$((apples % baskets))
+      echo "$each each, $left left over"
+  powershell:
+    starter: |
+      $apples = 47
+      $baskets = 5
+      # Whole apples per basket, then the apples that don't fit evenly.
+      $each = [math]::Floor($apples ___ $baskets)
+      $left = $apples ___ $baskets
+      Write-Output "$each each, $left left over"
+    hints:
+      - *apple_h1
+      - "PowerShell's / keeps the fraction, so [math]::Floor(...) rounds it down to whole apples. % gives the remainder. [math]::Floor(7 / 2) is 3 and 7 % 2 is 1."
+      - "First blank: /   Second blank: %"
+    solution: |
+      $apples = 47
+      $baskets = 5
+      $each = [math]::Floor($apples / $baskets)
+      $left = $apples % $baskets
+      Write-Output "$each each, $left left over"
+tests:
+  - name: "47 apples into 5 baskets"
+    expect: {stdout: "9 each, 2 left over\n", exit_code: 0}
+reward:
+  xp: 30
+  items: [apple_pie]
+  unlocks: []
+  world_effect: "Five baskets fill evenly; the Leaks lose interest and the nearest tree sheds two spare apples."

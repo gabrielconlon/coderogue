@@ -1,0 +1,89 @@
+id: ch1-06
+title: The Town Crier's Voice
+chapter: 1
+order: 6
+optional: false
+concepts: [strings, upper-case, length, input]
+vim_skill: "w dash in the world (leap to the next word-stone)"
+lore: |
+  Murmurby's town crier has lost their voice to the Null, and a crier without
+  a voice is just a person standing on a barrel. Tell them a name and they
+  will shout it back in capitals and announce how many letters it takes.
+  Spaces count too. "A SPACE IS A LETTER," the crier croaks, "FOR VOLUME."
+limits: {timeout_s: 2, max_stdout_kb: 16}
+languages:
+  python:
+    starter: |
+      # The name arrives through input().
+      name = input()
+      # Shout it in capitals, and count its letters.
+      loud = name.___()
+      count = ___(name)
+      print(loud)
+      print("Letters:", count)
+    hints:
+      - &crier_h1 "Two jobs on the same name: make a capitalised copy of it, and measure how long it is. Strings come with tools for both."
+      - "In Python a string has a method name.upper() that returns a capitalised copy, and the built-in len(name) returns how many characters it holds."
+      - "First blank: upper   Second blank: len"
+    solution: |
+      name = input()
+      loud = name.upper()
+      count = len(name)
+      print(loud)
+      print("Letters:", count)
+  bash:
+    starter: |
+      # The name arrives on stdin.
+      read -r name
+      # Shout it in capitals, and count its letters.
+      loud=$(echo "$name" | ___ a-z A-Z)
+      count=${#___}
+      echo "$loud"
+      echo "Letters: $count"
+    hints:
+      - *crier_h1
+      - "tr a-z A-Z turns every lowercase letter into its capital as text flows through it, so echo \"$name\" | tr a-z A-Z works. ${#name} is the number of characters in name."
+      - "First blank: tr   Second blank: name"
+    solution: |
+      read -r name
+      loud=$(echo "$name" | tr a-z A-Z)
+      count=${#name}
+      echo "$loud"
+      echo "Letters: $count"
+  powershell:
+    starter: |
+      # The name arrives on stdin: [Console]::In.ReadLine() catches one line.
+      $name = [Console]::In.ReadLine()
+      # Shout it in capitals, and count its letters.
+      $loud = $name.___()
+      $count = $name.___
+      Write-Output $loud
+      Write-Output "Letters: $count"
+    hints:
+      - *crier_h1
+      - "A PowerShell string has a method $name.ToUpper() that returns a capitalised copy, and a property $name.Length that holds how many characters it has."
+      - "First blank: ToUpper   Second blank: Length"
+    solution: |
+      $name = [Console]::In.ReadLine()
+      $loud = $name.ToUpper()
+      $count = $name.Length
+      Write-Output $loud
+      Write-Output "Letters: $count"
+tests:
+  - name: "A short name"
+    stdin: "Wren\n"
+    expect: {stdout: "WREN\nLetters: 4\n", exit_code: 0}
+  - name: "A name with a space (spaces count)"
+    stdin: "Mara Fen\n"
+    expect: {stdout: "MARA FEN\nLetters: 8\n"}
+  - name: "Mixed case and one letter"
+    stdin: "q\n"
+    expect: {stdout: "Q\nLetters: 1\n"}
+  - name: "Already shouting"
+    stdin: "Quill The Fussy\n"
+    expect: {stdout: "QUILL THE FUSSY\nLetters: 15\n"}
+reward:
+  xp: 30
+  items: [brass_horn]
+  unlocks: []
+  world_effect: "The crier's voice booms across Murmurby, and the market signs rattle in their frames."

@@ -1,0 +1,254 @@
+id: ch1-b
+title: "Boss: Grubble, the Typo King"
+chapter: 1
+order: 8
+optional: false
+concepts: [debugging, input, arithmetic, strings, formatted-output]
+vim_skill: "w/b to dodge, x to stun"
+lore: |
+  In the Hall of Echoes, Grubble the Typo King rises on a throne of
+  misspelled letters, crowned in glowing vowels. Strike his crown to stun
+  him, then step to a lectern and write. Three lecterns, three spells: mend
+  his garbled proclamation, take the census, and write the banner.
+limits: {timeout_s: 2, max_stdout_kb: 16}
+phases:
+  - title: "Lectern A: The Garbled Proclamation"
+    lore: |
+      Grubble's proclamation is a disgrace to the alphabet. Three typos hide
+      in five lines. Cast it, read the Terminal's complaint, and mend it
+      until the whole decree rings out clean.
+    languages:
+      python:
+        starter: |
+          # Grubble's proclamation. Three typos are hiding in it.
+          prnt("HEAR YE, HEAR YE!")
+          print("I am Grubble, the Typo King.")
+          Print("All signs shall be misspelled.")
+          print("All names shall be forgotten.)
+          print("Long live the typos!")
+        hints:
+          - &boss_a_h1 "Cast it and read the error. It names a line. Fix that line, cast again, and the next error points at the next problem. Three typos in all."
+          - "One line calls something that is not quite print, one calls it with the wrong capital letter, and one opens a quote but never closes it."
+          - "Line 2 should start with print( (all lowercase), line 4 too, and line 5 needs a closing quote before the bracket: ...forgotten.\")"
+        solution: |
+          # Grubble's proclamation. Three typos are hiding in it.
+          print("HEAR YE, HEAR YE!")
+          print("I am Grubble, the Typo King.")
+          print("All signs shall be misspelled.")
+          print("All names shall be forgotten.")
+          print("Long live the typos!")
+      bash:
+        starter: |
+          # Grubble's proclamation. Three typos are hiding in it.
+          ehco "HEAR YE, HEAR YE!"
+          echo "I am Grubble, the Typo King."
+          Echo "All signs shall be misspelled."
+          echo "All names shall be forgotten.
+          echo "Long live the typos!"
+        hints:
+          - *boss_a_h1
+          - "One line calls something that is not quite echo, one calls it with the wrong capital letter (bash is case-sensitive), and one opens a quote but never closes it."
+          - "Line 2 should start with echo (all lowercase), line 4 too, and line 5 needs a closing quote at the end: ...forgotten.\""
+        solution: |
+          # Grubble's proclamation. Three typos are hiding in it.
+          echo "HEAR YE, HEAR YE!"
+          echo "I am Grubble, the Typo King."
+          echo "All signs shall be misspelled."
+          echo "All names shall be forgotten."
+          echo "Long live the typos!"
+      powershell:
+        starter: |
+          # Grubble's proclamation. Three typos are hiding in it.
+          Wirte-Output "HEAR YE, HEAR YE!"
+          Write-Output "I am Grubble, the Typo King."
+          Write-Ouptut "All signs shall be misspelled."
+          Write-Output "All names shall be forgotten.
+          Write-Output "Long live the typos!"
+        hints:
+          - *boss_a_h1
+          - "Two lines misspell Write-Output, and one opens a quote but never closes it."
+          - "Lines 2 and 4 should start with Write-Output exactly, and line 5 needs a closing quote at the end: ...forgotten.\""
+        solution: |
+          # Grubble's proclamation. Three typos are hiding in it.
+          Write-Output "HEAR YE, HEAR YE!"
+          Write-Output "I am Grubble, the Typo King."
+          Write-Output "All signs shall be misspelled."
+          Write-Output "All names shall be forgotten."
+          Write-Output "Long live the typos!"
+    tests:
+      - name: "The mended proclamation"
+        expect:
+          stdout: "HEAR YE, HEAR YE!\nI am Grubble, the Typo King.\nAll signs shall be misspelled.\nAll names shall be forgotten.\nLong live the typos!\n"
+          exit_code: 0
+  - title: "Lectern B: The Census"
+    lore: |
+      Grubble's hall holds three households, and he has forgotten how many
+      souls live in each. Read the three counts, one per line, then print
+      the total and the average. Whole souls only: Grubble does not believe
+      in half a person, and the average rounds down.
+    languages:
+      python:
+        starter: |
+          # Three household counts arrive, one per line.
+          a = int(input())
+          b = int(input())
+          c = int(input())
+          total = a + b + ___
+          average = total ___ 3
+          print("Total:", total)
+          print("Average:", average)
+        hints:
+          - &boss_b_h1 "Read three numbers, add them for the total, then divide by 3 for the average, keeping whole numbers only."
+          - "Add all three counts with +. For the whole-number average, divide with // (it drops the fraction), so 17 // 3 is 5."
+          - "First blank: c   Second blank: //"
+        solution: |
+          a = int(input())
+          b = int(input())
+          c = int(input())
+          total = a + b + c
+          average = total // 3
+          print("Total:", total)
+          print("Average:", average)
+      bash:
+        starter: |
+          # Three household counts arrive, one per line.
+          read -r a
+          read -r b
+          read -r c
+          total=$((a + b + ___))
+          average=$((total ___ 3))
+          echo "Total: $total"
+          echo "Average: $average"
+        hints:
+          - *boss_b_h1
+          - "Add all three counts inside $(( )). Division there already drops the fraction, so $((17 / 3)) is 5."
+          - "First blank: c   Second blank: /"
+        solution: |
+          read -r a
+          read -r b
+          read -r c
+          total=$((a + b + c))
+          average=$((total / 3))
+          echo "Total: $total"
+          echo "Average: $average"
+      powershell:
+        starter: |
+          # Three household counts arrive, one per line.
+          $a = [int][Console]::In.ReadLine()
+          $b = [int][Console]::In.ReadLine()
+          $c = [int][Console]::In.ReadLine()
+          $total = $a + $b + ___
+          $average = [math]::Floor($total ___ 3)
+          Write-Output "Total: $total"
+          Write-Output "Average: $average"
+        hints:
+          - *boss_b_h1
+          - "Add all three counts with +. PowerShell's / keeps the fraction, so wrap it in [math]::Floor(...) to drop it: [math]::Floor(17 / 3) is 5."
+          - "First blank: $c   Second blank: /"
+        solution: |
+          $a = [int][Console]::In.ReadLine()
+          $b = [int][Console]::In.ReadLine()
+          $c = [int][Console]::In.ReadLine()
+          $total = $a + $b + $c
+          $average = [math]::Floor($total / 3)
+          Write-Output "Total: $total"
+          Write-Output "Average: $average"
+    tests:
+      - name: "An even census"
+        stdin: "4\n7\n10\n"
+        expect: {stdout: "Total: 21\nAverage: 7\n", exit_code: 0}
+      - name: "The average rounds down"
+        stdin: "5\n6\n6\n"
+        expect: {stdout: "Total: 17\nAverage: 5\n"}
+      - name: "An empty hall"
+        stdin: "0\n0\n0\n"
+        expect: {stdout: "Total: 0\nAverage: 0\n"}
+      - name: "A lonely household"
+        stdin: "1\n1\n2\n"
+        expect: {stdout: "Total: 4\nAverage: 1\n"}
+  - title: "Lectern C: The Banner"
+    lore: |
+      The hall's banner will show whatever your spell prints, so make it a
+      proper shout. Read a name, then the three counts. The banner must say
+      HEAR YE, the name in capitals, and the total souls counted. Grubble
+      has never been so well spelled.
+    languages:
+      python:
+        starter: |
+          # First line: a name. Next three lines: household counts.
+          name = input()
+          a = int(input())
+          b = int(input())
+          c = int(input())
+          total = a + b + c
+          print(f"HEAR YE, {___}! {total} SOULS COUNTED.")
+        hints:
+          - &boss_c_h1 "The banner is one line of text with two moving parts: the name in capitals, and the total. Everything else is fixed words and punctuation."
+          - "Inside an f-string, anything in {curly braces} is replaced by its value, and a method call works there too: {name.upper()}."
+          - "Blank: name.upper()"
+        solution: |
+          name = input()
+          a = int(input())
+          b = int(input())
+          c = int(input())
+          total = a + b + c
+          print(f"HEAR YE, {name.upper()}! {total} SOULS COUNTED.")
+      bash:
+        starter: |
+          # First line: a name. Next three lines: household counts.
+          read -r name
+          read -r a
+          read -r b
+          read -r c
+          total=$((a + b + c))
+          loud=$(echo "$name" | tr a-z ___)
+          echo "HEAR YE, $loud! $total SOULS COUNTED."
+        hints:
+          - *boss_c_h1
+          - "tr a-z A-Z turns lowercase letters into capitals as text flows through it, so $(echo \"$name\" | tr a-z A-Z) gives the name in capitals."
+          - "Blank: A-Z"
+        solution: |
+          read -r name
+          read -r a
+          read -r b
+          read -r c
+          total=$((a + b + c))
+          loud=$(echo "$name" | tr a-z A-Z)
+          echo "HEAR YE, $loud! $total SOULS COUNTED."
+      powershell:
+        starter: |
+          # First line: a name. Next three lines: household counts.
+          $name = [Console]::In.ReadLine()
+          $a = [int][Console]::In.ReadLine()
+          $b = [int][Console]::In.ReadLine()
+          $c = [int][Console]::In.ReadLine()
+          $total = $a + $b + $c
+          $loud = $name.___()
+          Write-Output "HEAR YE, $loud! $total SOULS COUNTED."
+        hints:
+          - *boss_c_h1
+          - "A PowerShell string has a method $name.ToUpper() that returns a capitalised copy. Store it in a variable, then use that variable inside the double quotes."
+          - "Blank: ToUpper"
+        solution: |
+          $name = [Console]::In.ReadLine()
+          $a = [int][Console]::In.ReadLine()
+          $b = [int][Console]::In.ReadLine()
+          $c = [int][Console]::In.ReadLine()
+          $total = $a + $b + $c
+          $loud = $name.ToUpper()
+          Write-Output "HEAR YE, $loud! $total SOULS COUNTED."
+    tests:
+      - name: "Wren's banner"
+        stdin: "Wren\n4\n7\n10\n"
+        expect: {stdout: "HEAR YE, WREN! 21 SOULS COUNTED.\n", exit_code: 0}
+      - name: "A name with a space"
+        stdin: "Mara Fen\n1\n2\n3\n"
+        expect: {stdout: "HEAR YE, MARA FEN! 6 SOULS COUNTED.\n"}
+      - name: "Lowercase name, empty hall"
+        stdin: "tally\n0\n0\n0\n"
+        expect: {stdout: "HEAR YE, TALLY! 0 SOULS COUNTED.\n"}
+reward:
+  xp: 120
+  items: [typo_crown]
+  unlocks: ["vim:e", "cmd:save", "cmd:map"]
+  world_effect: "The hall's banner displays the player's own output and Grubble deflates into a pile of letters. Every sign in Echo Vale relights with its name, and Pell says: ...Wren."

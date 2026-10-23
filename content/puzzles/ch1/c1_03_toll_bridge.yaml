@@ -1,0 +1,89 @@
+id: ch1-03
+title: The Toll Bridge
+chapter: 1
+order: 3
+optional: false
+concepts: [arithmetic, precedence, variables]
+vim_skill: "A (append at the end of a line)"
+lore: |
+  The toll-troll of Murmur Bridge has lost the number of its own prices, but
+  not its appetite. "FOUR CARTS," it rumbles. "SEVEN COINS A CART. PLUS FIVE
+  FOR THE TROLL'S TROUBLE." It will not lift the gate until you say the toll,
+  and it can smell a hard-coded answer from across the river.
+limits: {timeout_s: 2, max_stdout_kb: 16}
+languages:
+  python:
+    starter: |
+      carts = 4
+      price = 7
+      fee = 5
+      # Compute the toll from the variables. Multiplication goes before addition.
+      total = ___
+      print(total)
+    hints:
+      - &toll_h1 "Don't type the answer. Let the variables do the arithmetic: the cost of all the carts, plus the fee. Remember that times binds tighter than plus."
+      - "Python multiplies with * and adds with +. total = carts * price + fee uses the variables you already made."
+      - "Blank: carts * ___ + fee   (what is each cart charged?)"
+    solution: |
+      carts = 4
+      price = 7
+      fee = 5
+      total = carts * price + fee
+      print(total)
+    source_checks:
+      - pattern: '\A(?![\s\S]*\b33\b)'
+        message: "The troll can smell a typed-in answer. Let the variables do the math instead of writing the number yourself."
+      - pattern: '\b(carts|price)\b[^\n]*\*[^\n]*\b(carts|price)\b'
+        message: "Multiply carts by price with *, and add the fee."
+  bash:
+    starter: |
+      carts=4
+      price=7
+      fee=5
+      # Compute the toll from the variables. Multiplication goes before addition.
+      echo $(( ___ ))
+    hints:
+      - *toll_h1
+      - "bash does integer math inside $(( )). Names inside it need no $, so $(( carts * price + fee )) works. Careful: a bare * can be mangled outside $(( )), but inside it is safe."
+      - "Blank: carts * ___ + fee   (what is each cart charged?)"
+    solution: |
+      carts=4
+      price=7
+      fee=5
+      echo $(( carts * price + fee ))
+    source_checks:
+      - pattern: '\A(?![\s\S]*\b33\b)'
+        message: "The troll can smell a typed-in answer. Let the variables do the math instead of writing the number yourself."
+      - pattern: '\b(carts|price)\b[^\n]*\*[^\n]*\b(carts|price)\b'
+        message: "Multiply carts by price with *, and add the fee."
+  powershell:
+    starter: |
+      $carts = 4
+      $price = 7
+      $fee = 5
+      # Compute the toll from the variables. Multiplication goes before addition.
+      $total = ___
+      Write-Output $total
+    hints:
+      - *toll_h1
+      - "PowerShell multiplies with * and adds with +. $total = $carts * $price + $fee uses the variables you already made."
+      - "Blank: $carts * ___ + $fee   (what is each cart charged?)"
+    solution: |
+      $carts = 4
+      $price = 7
+      $fee = 5
+      $total = $carts * $price + $fee
+      Write-Output $total
+    source_checks:
+      - pattern: '\A(?![\s\S]*\b33\b)'
+        message: "The troll can smell a typed-in answer. Let the variables do the math instead of writing the number yourself."
+      - pattern: '\b(carts|price)\b[^\n]*\*[^\n]*\b(carts|price)\b'
+        message: "Multiply $carts by $price with *, and add the fee."
+tests:
+  - name: "Four carts at seven coins, plus the fee"
+    expect: {stdout: "33\n", exit_code: 0}
+reward:
+  xp: 30
+  items: [toll_receipt]
+  unlocks: []
+  world_effect: "The toll gate rises with a groan and the troll counts the coins twice, out of spite."

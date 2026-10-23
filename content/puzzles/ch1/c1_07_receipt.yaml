@@ -1,0 +1,75 @@
+id: ch1-07
+title: Tally's Receipt Spell
+chapter: 1
+order: 7
+optional: false
+concepts: [type-conversion, arithmetic, formatted-output, input]
+vim_skill: "A and o together (append, then open a new line)"
+lore: |
+  Tally counts everything out loud, but the Null has scrambled the inn's
+  till. Potions cost 12 coins each. A customer says how many they want, and
+  your spell must write the receipt. "Fix the number first," Tally warns,
+  "because input arrives as words, and words can't be multiplied. Also, we
+  do not pluralise at this inn. Pluralising is a second spell."
+limits: {timeout_s: 2, max_stdout_kb: 16}
+languages:
+  python:
+    starter: |
+      # input() hands back text, even when it looks like a number.
+      qty = ___(input())
+      cost = qty * 12
+      print(f"{qty} potions cost {cost} coins.")
+    hints:
+      - &receipt_h1 "The quantity arrives as text, and text can't be multiplied by 12 in a useful way. Convert it to a whole number before doing the math."
+      - "Wrap what input() returns in int(...) to turn the text into a number. Then qty * 12 is real arithmetic and the f-string can show both numbers."
+      - "Blank: int   (so the line reads qty = int(input()))"
+    solution: |
+      qty = int(input())
+      cost = qty * 12
+      print(f"{qty} potions cost {cost} coins.")
+  bash:
+    starter: |
+      # read gives text, but $(( )) turns digits into numbers for you.
+      read -r qty
+      cost=$((qty * ___))
+      echo "$qty potions cost $cost coins."
+    hints:
+      - *receipt_h1
+      - "bash treats variables as text until you do math on them, and $(( )) reads the digits as a number. So cost=$((qty * 12)) is all the conversion you need."
+      - "Blank: 12   (what does one potion cost?)"
+    solution: |
+      read -r qty
+      cost=$((qty * 12))
+      echo "$qty potions cost $cost coins."
+  powershell:
+    starter: |
+      # ReadLine() hands back text, even when it looks like a number.
+      $qty = [___][Console]::In.ReadLine()
+      $cost = $qty * 12
+      Write-Output "$qty potions cost $cost coins."
+    hints:
+      - *receipt_h1
+      - "Put a type in square brackets before the value to convert it: [int]\"3\" is the number 3. Then $qty * 12 is real arithmetic."
+      - "Blank: int   (so the line reads $qty = [int][Console]::In.ReadLine())"
+    solution: |
+      $qty = [int][Console]::In.ReadLine()
+      $cost = $qty * 12
+      Write-Output "$qty potions cost $cost coins."
+tests:
+  - name: "Three potions"
+    stdin: "3\n"
+    expect: {stdout: "3 potions cost 36 coins.\n", exit_code: 0}
+  - name: "One potion (no pluralising here)"
+    stdin: "1\n"
+    expect: {stdout: "1 potions cost 12 coins.\n"}
+  - name: "A big order"
+    stdin: "25\n"
+    expect: {stdout: "25 potions cost 300 coins.\n"}
+  - name: "Nothing bought"
+    stdin: "0\n"
+    expect: {stdout: "0 potions cost 0 coins.\n"}
+reward:
+  xp: 40
+  items: [receipt_scroll]
+  unlocks: ["shop:open"]
+  world_effect: "Tally's shop shelves fill with potions and the till rings for the first time since the Null."
