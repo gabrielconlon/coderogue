@@ -1,0 +1,43 @@
+# The Top Gate (Chapter 3, the MVP ending): a short walkway from the Census Hall to the
+# Directory's top gate. Past the arch the road to Rootholm is a dotted line of greyed-out
+# '#' marks, commented out; its far door never opens in the MVP (locked_by=mvp_end).
+name: top_gate
+area: The Top Gate
+chapter: 3
+enter_flag: entered:grand_directory
+tilesets: dungeon
+legend:
+  # ground=dungeon:48 wall=dungeon:40,40,40,57,58,59
+  . ground=dungeon:48,48,48,48,49,50,51
+  , ground=dungeon:53
+  B ground=dungeon:48 wall=dungeon:63,63,63,75
+  F ground=dungeon:48 wall=dungeon:40 decor=dungeon:29
+  W ground=dungeon:48 wall=dungeon:28
+  P ground=dungeon:48 wall=dungeon:18
+  D ground=dungeon:48 decor=dungeon:45
+  b ground=dungeon:48 wall=dungeon:29
+  ~ ground=dungeon:0 wall=dungeon:0,0,0,12
+  0 ground=dungeon:0
+  o ground=dungeon:12
+  q ground=dungeon:24
+grid:
+~~~~~~~~~0q0~~~~~~~~
+~~~~~~~~0ooo0~~~~~~~
+~~~~~~~~00q00~~~~~~~
+~~~~~~~~0ooo0~~~~~~~
+~~~~~~~~00q00~~~~~~~
+######FW##.##WF#####
+#BBBBBb...,...bBBBB#
+#BBBBB.P..,..P.BBBB#
+#BBBBB....,....BBBB#
+#BBBBB.P..,..P.BBBB#
+#BBBBB....,....BBBB#
+##########D#########
+objects:
+player_spawn spawn 10 9
+player_spawn from_census 10 9
+door down_to_census 10 11 target=census_hall spawn=from_top_gate
+door /directory/top-gate 10 5
+door road_to_rootholm 10 0 locked_by=mvp_end
+npc Pell 9 6 tile=84 dialogue=pell_ch3
+waystone top_gate 12 8 tile=83 sheet=town

@@ -1,5 +1,6 @@
 # The Crossroads (Chapter 1): the ferry landing (south), Tally's Inn and its counter
-# (west), the waystone at the crossing, and the Hall of Echoes (east).
+# (west), the waystone at the crossing, the Hall of Echoes (east), and the north gate to
+# Branchwood (opens once 1-B is solved).
 name: crossroads
 area: The Crossroads
 chapter: 1
@@ -43,9 +44,8 @@ legend:
   ? ground=town:0 wall=town:79
   = ground=dungeon:37
   N ground=town:0 wall=town:83
-  G ground=town:25 wall=town:112
 grid:
-TTTTTTTTTTTTTTTTTTWGWTTTTTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTTTTWnWTTTTTTTTTTTTTTTTTTT
 TT.................,..................TT
 TT.................,..................TT
 TT..............b..,....<^>...........TT
@@ -73,7 +73,9 @@ objects:
 player_spawn spawn 8 19
 player_spawn from_vale 8 19
 player_spawn from_hall 32 11
+player_spawn from_branchwood 19 2
 door ferry_back 8 21 target=echo_vale spawn=from_crossroads
+door north_gate 19 0 target=branchwood spawn=from_crossroads requires_solved=ch1-b
 npc Tally 10 9 tile=112
 altar receipt 12 9 puzzle=ch1-07
 chest inn_chest 14 9 coins=15

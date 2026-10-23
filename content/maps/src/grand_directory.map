@@ -1,0 +1,72 @@
+# The Grand Directory (Chapter 3), the entrance halls. From the mire door (south) the front
+# hall holds Dex's desk (3-01). West: the yank/put room, a crate and a plate that opens the
+# gate up to the Gossip Gallery (3-02, the wall of shouting words). East along the north:
+# the golem antechamber (3-03), whose gate opens the Reading Room and the door up to the
+# stacks. The catalogue hall (east) keeps the waystone and Cole. After 3-02 a shortcut gate
+# joins the front hall to the antechamber, so a reset crate never strands the player.
+name: grand_directory
+area: The Grand Directory
+chapter: 3
+enter_flag: entered:grand_directory
+tilesets: dungeon
+legend:
+  # ground=dungeon:48 wall=dungeon:40,40,40,57,58,59
+  . ground=dungeon:48,48,48,48,49,50,51
+  , ground=dungeon:53
+  B ground=dungeon:48 wall=dungeon:63,63,63,75
+  F ground=dungeon:48 wall=dungeon:40 decor=dungeon:29
+  W ground=dungeon:48 wall=dungeon:28
+  P ground=dungeon:48 wall=dungeon:18
+  D ground=dungeon:48 decor=dungeon:45
+  S ground=dungeon:48 wall=dungeon:64,65,66
+  t ground=dungeon:48 wall=dungeon:72
+grid:
+#SSSSSSSSSSSS####F####F######W##D##W####
+S............#............#BB........BB#
+S............#..P......P..#BB........BB#
+S.........................#............#
+S......................................#
+S............#............#...BB..BB...#
+S.SS......SS.#............#............#
+S............#..P......P..#BB........BB#
+S............#............#BB........BB#
+######.#############.###################
+#BB........BB#B..........B#............#
+#............#............#.BBBB...BBB.#
+#............#...ttttttt..#............#
+#...................,.....#.BBBB...BBB.#
+#...................,.....#............#
+#............#.P....,...P..............W
+#..BBB..BBB..#......,..................W
+#............#......,.....#............#
+#............#......,.....#............#
+#............#.P....,...P.#.BBBB...BBB.#
+#............#......,.....#............#
+#............#......,.....#.BBBB...BBB.#
+#BBBBBBBBBBBB#......,.....#BBBBBBBBBBBB#
+####################D###################
+objects:
+player_spawn spawn 20 20
+player_spawn from_heart 20 21
+player_spawn from_stacks 32 2
+door to_mire_heart 20 23 target=mire_heart spawn=from_directory
+door to_stacks 32 0 target=stacks spawn=from_directory
+# front hall
+npc Dex 18 13 tile=98 dialogue=dex
+altar inventory 22 13 puzzle=ch3-01
+# the yank/put room: carry the crate out of its pen onto the plate
+liftable crate_tutorial 4 19
+plate plate_gallery 9 11
+door /directory/gossip-gallery 6 9 plate=plate_gallery
+# the Gossip Gallery
+altar gossip 6 3 puzzle=ch3-02
+door /directory/front-hall 20 9 requires_solved=ch3-02
+# the golem antechamber and the Reading Room gate
+npc stamp_golem 25 2 tile=94 sheet=town dialogue=stamp_golem
+enemy golem_a 25 3 kind=stamp_golem dismiss_on=ch3-03
+enemy golem_b 25 5 kind=stamp_golem dismiss_on=ch3-03
+altar greeting_rite 24 6 puzzle=ch3-03
+door /directory/reading-room 26 4 requires_solved=ch3-03
+# the catalogue hall
+waystone directory 32 16 tile=83 sheet=town
+npc Cole 33 15 tile=96 dialogue=cole_directory

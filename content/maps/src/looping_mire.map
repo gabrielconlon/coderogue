@@ -1,0 +1,96 @@
+# The Looping Mire (Chapter 2): the bell landing at the west entrance (2-03), a great
+# ring causeway around the sunken shrine (Ono's Hourglass, Cole and the Ledger, the
+# waystone), the lantern causeway (2-04), the herbalist's hut (2-05), the reed field
+# swarm (2-06), the firefly side loop (2-07), and the east spur to the Mire's heart.
+name: looping_mire
+area: The Looping Mire
+chapter: 2
+enter_flag: entered:looping_mire
+tilesets: town dungeon
+legend:
+  . ground=town:0,0,0,0,1,2
+  , ground=town:25
+  r ground=town:1,1,2,0
+  T ground=town:0 wall=town:16,16,4,28
+  ~ ground=dungeon:0 wall=dungeon:0,0,0,12
+  _ ground=dungeon:24
+  # ground=dungeon:48 wall=dungeon:40,40,40,57,58,59
+  S ground=dungeon:48 decor=dungeon:46
+  f ground=dungeon:48,48,48,49,50,51
+  < ground=town:0 wall=town:48
+  ^ ground=town:0 wall=town:49
+  > ground=town:0 wall=town:50
+  { ground=town:0 wall=town:60
+  m ground=town:0 wall=town:61
+  } ground=town:0 wall=town:62
+  [ ground=town:0 wall=town:72
+  w ground=town:0 wall=town:84
+  ] ground=town:0 wall=town:75
+grid:
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+T~~~~~~~~~~~~~~~~~~~~~~~~~~~..<^>....~~~~~~~~~~T
+T~~~~~~~~~~~~~~~~~~~~~~~~~~~..{m}....~~~~~~~~~~T
+T~~~~~~~~~~~~~~~~~~~~~~~~~~~..[w]....~~~~~~~~~~T
+T~~~~~~~~~~,,rr,,,,,,,rr,,,,,,r,,,,,,,~~~~~~~~~T
+T~~~~~~~~~,,,,,,,,,,,,,,,,,,,,,,,,,,,,,~~~~~~~~T
+T~~~~~~~~,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,~~~~~~~T
+T~~~~~~~~,,,~~~~~~~~~~~~_~~~~~~~~~~~~,,,~~~~~~~T
+T~~~~~~~~,,,~~~~~~~~~~~~_~~~~~~~~~~~~,,,~~~~~~~T
+T~~~~~~~~,,,~~~~~~~~~~~~_~~~~~~~~~~~~,,,~~~~~~~T
+T........,,,~~~~~~~#####S#####~~~~~~~,,,~~~~~~~T
+T.r......,,,~~~~~~~#fffffffff#~~~~~~~,,,.......T
+T........,,,~~~~~~~#fffffffff#~~~~~~~,,,.......T
+,,,,,,,,,,,,~~~~~~~#fffffffff#~~~~~~~,,,,,,,,,,,
+T........,,,~~~~~~~#fffffffff#~~~~~~~,,,.......T
+T..r...r.,,,~~~~~~~#fffffffff#~~~~~~~,,,.......T
+T........,,,~~~~~~~###########~~~~~~~,,,~~~~~~~T
+T~~~~~~~~,,,~~~~~~~~~~~~~~~~~~~~~~~~~,,,rrrrTrTT
+T........,,,~~~~~~~~~~~~~~~~~~~~~~~~~,,,rrrrrrrT
+T.,,,,,,,,,,~~~~~~~~~~~~~~~~~~~~~~~~~,,,rrrrrrrT
+T.,~~~~,.,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,rrrrrrrT
+T.,~~~~,.~,,,,,,,,,,,,,,,,,,,,,,,,,,,,,~rrrrrrrT
+T.,~~~~,.~~,,,,,rr,,,,,,,rr,,,,,,r,,,,~rrrrrrrrT
+T.,~~~~,.~~~~~~~~~~~~~~~~~~~~~~~~~~~,,,rrrrrrrrT
+T.,~~~~,.~~~~~~~~~~~~~~~~~~~~~~~~~~~rrrrrrrrrrrT
+T.,,,,,,.~~~~~~~~~~~~~~~~~~~~~~~~~~~rrrrrrrrrrrT
+T........~~~~~~~~~~~~~~~~~~~~~~~~~~~TrrrrrrrrrTT
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+objects:
+player_spawn spawn 2 13
+player_spawn from_branchwood 2 13
+player_spawn from_heart 44 13
+door to_branchwood 0 13 target=branchwood spawn=from_mire
+# the bell landing by the entrance
+altar bells 6 11 puzzle=ch2-03
+# the sunken shrine: Ono's Hourglass, Cole's Ledger (the disaster beat), the waystone
+npc ono 21 12 tile=84
+npc cole_mire 27 13 tile=96
+waystone mire 26 14 tile=83 sheet=town
+# the lantern causeway (north side of the ring)
+altar lanterns 16 4 puzzle=ch2-04
+# the herbalist's hut
+altar herbalist 29 3 puzzle=ch2-05
+chest herb_chest 33 3 coins=8
+# the reed field swarm
+altar swarm 43 22 puzzle=ch2-06
+enemy mite_a 41 19 kind=typo_mite hp=1 tile=122
+enemy mite_b 44 19 kind=typo_mite hp=1 tile=122
+enemy mite_c 40 24 kind=typo_mite hp=1 tile=122
+enemy mite_d 45 25 kind=typo_mite hp=1 tile=122
+enemy leak_a 38 25 kind=leak hp=2 tile=108
+enemy leak_b 45 21 kind=leak hp=2 tile=108
+# the firefly side loop (optional)
+altar fireflies 5 26 puzzle=ch2-07
+potion loop_tonic 1 26
+# polite travelers walking the ring
+npc mire_traveler_a 13 4 tile=97
+npc mire_traveler_b 39 15 tile=99
+npc mire_traveler_c 21 22 tile=100
+# loopers coiled in rows across the causeways
+enemy looper_a 22 5 kind=looper hp=4
+enemy looper_b 30 6 kind=looper hp=4
+enemy looper_c 16 20 kind=looper hp=4
+enemy looper_d 28 21 kind=looper hp=4
+enemy looper_e 43 12 kind=looper hp=4
+enemy looper_f 44 14 kind=looper hp=4
+door to_heart 47 13 target=mire_heart spawn=from_mire requires_solved=ch2-06

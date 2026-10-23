@@ -1,0 +1,57 @@
+# The Census Hall (Chapter 3 boss): shelves round the walls, a railed catalogue floor with
+# four lecterns (3-B phases a-d). The Hollow Archivist files name cards in the middle.
+# Pell waits by the north door to the top gate, which opens once 3-B is solved.
+name: census_hall
+area: The Census Hall
+chapter: 3
+enter_flag: entered:grand_directory
+boss: hollow_archivist
+tilesets: dungeon
+legend:
+  # ground=dungeon:48 wall=dungeon:40,40,40,57,58,59
+  . ground=dungeon:48,48,48,48,49,50,51
+  , ground=dungeon:53
+  B ground=dungeon:48 wall=dungeon:63,63,63,75
+  F ground=dungeon:48 wall=dungeon:40 decor=dungeon:29
+  W ground=dungeon:48 wall=dungeon:28
+  P ground=dungeon:48 wall=dungeon:18
+  D ground=dungeon:48 decor=dungeon:45
+  [ ground=dungeon:48 wall=dungeon:69
+  ^ ground=dungeon:48 wall=dungeon:70
+  ] ground=dungeon:48 wall=dungeon:71
+  { ground=dungeon:48 wall=dungeon:81
+  } ground=dungeon:48 wall=dungeon:83
+  < ground=dungeon:48 wall=dungeon:93
+  _ ground=dungeon:48 wall=dungeon:94
+  > ground=dungeon:48 wall=dungeon:95
+  c ground=dungeon:42
+grid:
+####F#######D######F####
+#BBBBBBBBB....BBBBBBBBB#
+#B....................B#
+#B..[^^^^^....^^^^^]..B#
+#B..{..............}..B#
+#B..{..............}..B#
+#B..{......cc......}..B#
+#B..{......cc......}..B#
+#B..{......cc......}..B#
+#B..{..............}..B#
+#B..{..............}..B#
+#B..<_____...._____>..B#
+#B....................B#
+#B....................B#
+#BBBBBBBB......BBBBBBBB#
+############D###########
+objects:
+player_spawn spawn 12 13
+player_spawn from_stacks 12 13
+player_spawn from_top_gate 12 2
+door exit 12 15 target=stacks spawn=from_census
+door top_gate 12 0 target=top_gate spawn=from_census requires_solved=ch3-b
+npc hollow_archivist 10 13 tile=111 dialogue=hollow_archivist
+enemy "Hollow Archivist" 11 7 kind=boss boss=hollow_archivist arena_w=16 arena_h=10
+altar lectern_a 6 5 puzzle=ch3-b phase=a
+altar lectern_b 17 5 puzzle=ch3-b phase=b
+altar lectern_c 6 9 puzzle=ch3-b phase=c
+altar lectern_d 17 9 puzzle=ch3-b phase=d
+npc Pell 14 2 tile=84 dialogue=pell_ch3

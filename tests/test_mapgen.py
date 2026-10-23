@@ -22,9 +22,16 @@ STORY_MAPS = (
     "echo_vale",
     "crossroads",
     "hall_of_echoes",
+    "branchwood",
+    "looping_mire",
+    "mire_heart",
+    "grand_directory",
+    "stacks",
+    "census_hall",
+    "top_gate",
 )
 # Map property `chapter` -> the dialogue file that voices that chapter's NPCs.
-CHAPTER_DIALOGUE = {0: "little_tilde", 1: "echo_vale"}
+CHAPTER_DIALOGUE = {0: "little_tilde", 1: "echo_vale", 2: "branchwood_mire", 3: "grand_directory"}
 ENEMY_KINDS = {"typo_mite", "off_by_one", "leak", "looper", "null_wisp", "stamp_golem", "boss"}
 
 
@@ -150,10 +157,14 @@ def test_objects_sit_on_walkable_tiles(name: str) -> None:
 def test_doors_lead_to_existing_spawns(name: str) -> None:
     data = _map(name)
     doors = data.objects_of_type("door")
-    assert doors, f"{name} has no exits"
+    assert any(d.properties.get("target") for d in doors), f"{name} has no exits"
+    plates = {o.name for o in data.objects_of_type("plate")}
     for door in doors:
         target = door.properties.get("target")
-        assert target, f"{name}: door {door.name!r} has no target"
+        if not target:  # an in-map gate (see coderogue/entities/door.py)
+            plate = door.properties.get("plate")
+            assert not plate or plate in plates, f"{name}: gate {door.name!r} -> no plate {plate}"
+            continue
         target_path = MAPS / f"{target}.tmj"
         assert target_path.exists(), f"{name}: door {door.name!r} -> missing map {target}"
         spawn = door.properties.get("spawn", "spawn")
@@ -215,6 +226,73 @@ def test_story_beats_are_placed() -> None:
     assert boss is not None and boss.name == "Grubble"
     assert boss.properties["boss"] == "grubble"
 
+
+def test_chapter3_beats_are_placed() -> None:
+    def puzzles_in(name: str) -> set[str]:
+        return {o.properties["puzzle"] for o in _map(name).objects_of_type("altar")}
+
+    assert puzzles_in("grand_directory") == {"ch3-01", "ch3-02", "ch3-03"}
+    assert puzzles_in("stacks") == {f"ch3-0{i}" for i in range(4, 8)}
+    assert puzzles_in("census_hall") == {"ch3-b"}
+    directory = _map("grand_directory")
+    assert [o.name for o in directory.objects_of_type("waystone")] == ["directory"]
+    golems = [e for e in directory.objects_of_type("enemy")
+              if e.properties["kind"] == "stamp_golem"]
+    assert len(golems) == 2
+    assert any(d.properties.get("requires_solved") == "ch3-03"
+               for d in directory.objects_of_type("door"))
+    stacks = _map("stacks")
+    kinds = [e.properties["kind"] for e in stacks.objects_of_type("enemy")]
+    assert kinds.count("null_wisp") == 3 and kinds.count("off_by_one") == 2
+    census = next(d for d in stacks.objects_of_type("door")
+                  if d.properties.get("target") == "census_hall")
+    assert census.properties["requires_solved"] == "ch3-07"
+    assert len(stacks.objects_of_type("liftable")) == 2
+    hall = _map("census_hall")
+    assert sorted(o.name for o in hall.objects_of_type("altar")) == [
+        "lectern_a", "lectern_b", "lectern_c", "lectern_d"]
+    boss = hall.first_object("enemy")
+    assert boss is not None and boss.properties["boss"] == "hollow_archivist"
+    gate = _map("top_gate")
+    road = next(d for d in gate.objects_of_type("door") if d.name == "road_to_rootholm")
+    assert road.properties["locked_by"] == "mvp_end"
+    assert [o.name for o in gate.objects_of_type("waystone")] == ["top_gate"]
+
+
+def test_chapter2_beats_are_placed() -> None:
+    def puzzles_in(name: str) -> set[str]:
+        return {o.properties["puzzle"] for o in _map(name).objects_of_type("altar")}
+
+    gate = next(d for d in _map("crossroads").objects_of_type("door")
+                if d.properties.get("target") == "branchwood")
+    assert gate.properties["requires_solved"] == "ch1-b"
+    wood = _map("branchwood")
+    assert puzzles_in("branchwood") == {"ch2-01", "ch2-02"}
+    assert {o.name for o in wood.objects_of_type("npc")} == {"sable", "crow_letter"}
+    assert [o.name for o in wood.objects_of_type("waystone")] == ["branchwood"]
+    kinds = [e.properties["kind"] for e in wood.objects_of_type("enemy")]
+    assert kinds.count("null_wisp") >= 2 and kinds.count("looper") >= 2
+    mire = _map("looping_mire")
+    assert puzzles_in("looping_mire") == {f"ch2-0{i}" for i in range(3, 8)}
+    assert {o.name for o in mire.objects_of_type("npc")} == {
+        "ono", "cole_mire", "mire_traveler_a", "mire_traveler_b", "mire_traveler_c"}
+    assert [o.name for o in mire.objects_of_type("waystone")] == ["mire"]
+    kinds = [e.properties["kind"] for e in mire.objects_of_type("enemy")]
+    assert 4 <= kinds.count("looper") <= 6
+    assert kinds.count("typo_mite") == 4 and kinds.count("leak") == 2
+    heart_door = next(d for d in mire.objects_of_type("door")
+                      if d.properties.get("target") == "mire_heart")
+    assert heart_door.properties["requires_solved"] == "ch2-06"
+    heart = _map("mire_heart")
+    stones = heart.objects_of_type("altar")
+    assert sorted(o.name for o in stones) == ["loop_stone_a", "loop_stone_b", "loop_stone_c"]
+    assert {o.properties["puzzle"] for o in stones} == {"ch2-b"}
+    boss = heart.first_object("enemy")
+    assert boss is not None and boss.name == "Ouroboros"
+    assert boss.properties["boss"] == "ouroboros"
+    onward = next(d for d in heart.objects_of_type("door")
+                  if d.properties.get("target") == "grand_directory")
+    assert onward.properties["requires_solved"] == "ch2-b"
 
 @pytest.mark.parametrize("name", STORY_MAPS)
 def test_headless_smoke(name: str) -> None:

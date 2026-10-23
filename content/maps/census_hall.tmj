@@ -1,0 +1,413 @@
+{
+ "compressionlevel": -1,
+ "height": 16,
+ "infinite": false,
+ "layers": [
+  {
+   "data": [
+    49,49,49,49,49,49,49,49,49,49,49,49,49,49,49,49,49,49,49,49,49,49,49,49,
+    49,49,49,49,49,49,49,49,49,49,51,52,49,49,49,49,49,49,49,49,49,49,49,49,
+    49,49,51,52,52,49,49,50,52,49,49,49,49,49,49,49,49,49,51,52,49,52,49,49,
+    49,49,52,49,49,49,49,49,49,49,49,52,49,52,49,49,49,49,49,49,51,50,49,49,
+    49,49,49,49,49,51,49,50,49,51,49,50,51,49,49,52,49,49,51,49,49,49,49,49,
+    49,49,50,52,49,49,49,52,49,49,49,49,49,49,49,49,51,50,49,49,49,50,49,49,
+    49,49,49,51,49,49,51,49,49,52,49,43,43,49,49,49,49,49,50,49,49,51,49,49,
+    49,49,49,50,49,52,52,50,49,49,52,43,43,49,49,49,49,52,49,49,49,51,49,49,
+    49,49,49,49,49,49,49,49,49,49,49,43,43,49,49,52,49,52,49,49,49,49,49,49,
+    49,49,49,51,49,51,49,51,50,49,52,49,49,50,49,51,51,49,49,49,51,49,49,49,
+    49,49,52,49,49,52,51,49,49,52,49,49,49,51,50,49,49,51,51,49,50,51,49,49,
+    49,49,49,49,49,49,49,49,49,49,49,50,49,51,49,49,49,49,49,49,49,50,49,49,
+    49,49,49,49,49,49,49,50,49,49,49,50,49,50,52,50,50,52,49,49,52,51,49,49,
+    49,49,51,52,49,50,49,51,49,49,49,51,49,50,49,49,49,49,49,51,49,51,49,49,
+    49,49,49,49,49,49,49,49,49,49,49,52,49,51,49,49,49,49,49,49,49,49,49,49,
+    49,49,49,49,49,49,49,49,49,49,49,49,49,49,49,49,49,49,49,49,49,49,49,49
+   ],
+   "height": 16,
+   "id": 1,
+   "name": "ground",
+   "opacity": 1,
+   "type": "tilelayer",
+   "visible": true,
+   "width": 24,
+   "x": 0,
+   "y": 0
+  },
+  {
+   "data": [
+    59,59,60,60,41,59,58,41,60,58,58,41,0,41,59,41,60,41,58,41,41,41,59,41,
+    41,64,64,64,64,64,64,64,64,64,0,0,0,0,76,64,76,64,76,64,64,64,76,59,
+    58,64,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,76,58,
+    41,64,0,0,70,71,71,71,71,71,0,0,0,0,71,71,71,71,71,72,0,0,64,60,
+    58,64,0,0,82,0,0,0,0,0,0,0,0,0,0,0,0,0,0,84,0,0,76,41,
+    41,64,0,0,82,0,0,0,0,0,0,0,0,0,0,0,0,0,0,84,0,0,64,60,
+    59,64,0,0,82,0,0,0,0,0,0,0,0,0,0,0,0,0,0,84,0,0,64,58,
+    58,64,0,0,82,0,0,0,0,0,0,0,0,0,0,0,0,0,0,84,0,0,64,41,
+    59,64,0,0,82,0,0,0,0,0,0,0,0,0,0,0,0,0,0,84,0,0,64,60,
+    60,64,0,0,82,0,0,0,0,0,0,0,0,0,0,0,0,0,0,84,0,0,64,60,
+    41,76,0,0,82,0,0,0,0,0,0,0,0,0,0,0,0,0,0,84,0,0,64,58,
+    58,76,0,0,94,95,95,95,95,95,0,0,0,0,95,95,95,95,95,96,0,0,64,58,
+    41,64,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,64,59,
+    41,64,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,64,41,
+    41,64,64,64,64,64,64,64,64,0,0,0,0,0,0,64,64,64,64,64,64,64,76,41,
+    60,60,60,41,58,59,41,41,41,41,41,58,0,60,41,41,41,58,60,41,59,58,41,60
+   ],
+   "height": 16,
+   "id": 2,
+   "name": "walls",
+   "opacity": 1,
+   "type": "tilelayer",
+   "visible": true,
+   "width": 24,
+   "x": 0,
+   "y": 0
+  },
+  {
+   "data": [
+    0,0,0,0,30,0,0,0,0,0,0,0,46,0,0,0,0,0,0,30,0,0,0,0,
+    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+    0,0,0,0,0,0,0,0,0,0,0,0,46,0,0,0,0,0,0,0,0,0,0,0
+   ],
+   "height": 16,
+   "id": 3,
+   "name": "decor",
+   "opacity": 1,
+   "type": "tilelayer",
+   "visible": true,
+   "width": 24,
+   "x": 0,
+   "y": 0
+  },
+  {
+   "draworder": "topdown",
+   "id": 4,
+   "name": "objects",
+   "objects": [
+    {
+     "id": 1,
+     "name": "spawn",
+     "type": "player_spawn",
+     "x": 192,
+     "y": 208,
+     "width": 16,
+     "height": 16,
+     "rotation": 0,
+     "visible": true
+    },
+    {
+     "id": 2,
+     "name": "from_stacks",
+     "type": "player_spawn",
+     "x": 192,
+     "y": 208,
+     "width": 16,
+     "height": 16,
+     "rotation": 0,
+     "visible": true
+    },
+    {
+     "id": 3,
+     "name": "from_top_gate",
+     "type": "player_spawn",
+     "x": 192,
+     "y": 32,
+     "width": 16,
+     "height": 16,
+     "rotation": 0,
+     "visible": true
+    },
+    {
+     "id": 4,
+     "name": "exit",
+     "type": "door",
+     "x": 192,
+     "y": 240,
+     "width": 16,
+     "height": 16,
+     "rotation": 0,
+     "visible": true,
+     "properties": [
+      {
+       "name": "target",
+       "type": "string",
+       "value": "stacks"
+      },
+      {
+       "name": "spawn",
+       "type": "string",
+       "value": "from_census"
+      }
+     ]
+    },
+    {
+     "id": 5,
+     "name": "top_gate",
+     "type": "door",
+     "x": 192,
+     "y": 0,
+     "width": 16,
+     "height": 16,
+     "rotation": 0,
+     "visible": true,
+     "properties": [
+      {
+       "name": "target",
+       "type": "string",
+       "value": "top_gate"
+      },
+      {
+       "name": "spawn",
+       "type": "string",
+       "value": "from_census"
+      },
+      {
+       "name": "requires_solved",
+       "type": "string",
+       "value": "ch3-b"
+      }
+     ]
+    },
+    {
+     "id": 6,
+     "name": "hollow_archivist",
+     "type": "npc",
+     "x": 160,
+     "y": 208,
+     "width": 16,
+     "height": 16,
+     "rotation": 0,
+     "visible": true,
+     "properties": [
+      {
+       "name": "tile",
+       "type": "int",
+       "value": 111
+      },
+      {
+       "name": "dialogue",
+       "type": "string",
+       "value": "hollow_archivist"
+      }
+     ]
+    },
+    {
+     "id": 7,
+     "name": "Hollow Archivist",
+     "type": "enemy",
+     "x": 176,
+     "y": 112,
+     "width": 16,
+     "height": 16,
+     "rotation": 0,
+     "visible": true,
+     "properties": [
+      {
+       "name": "kind",
+       "type": "string",
+       "value": "boss"
+      },
+      {
+       "name": "boss",
+       "type": "string",
+       "value": "hollow_archivist"
+      },
+      {
+       "name": "arena_w",
+       "type": "int",
+       "value": 16
+      },
+      {
+       "name": "arena_h",
+       "type": "int",
+       "value": 10
+      }
+     ]
+    },
+    {
+     "id": 8,
+     "name": "lectern_a",
+     "type": "altar",
+     "x": 96,
+     "y": 80,
+     "width": 16,
+     "height": 16,
+     "rotation": 0,
+     "visible": true,
+     "properties": [
+      {
+       "name": "puzzle",
+       "type": "string",
+       "value": "ch3-b"
+      },
+      {
+       "name": "phase",
+       "type": "string",
+       "value": "a"
+      }
+     ]
+    },
+    {
+     "id": 9,
+     "name": "lectern_b",
+     "type": "altar",
+     "x": 272,
+     "y": 80,
+     "width": 16,
+     "height": 16,
+     "rotation": 0,
+     "visible": true,
+     "properties": [
+      {
+       "name": "puzzle",
+       "type": "string",
+       "value": "ch3-b"
+      },
+      {
+       "name": "phase",
+       "type": "string",
+       "value": "b"
+      }
+     ]
+    },
+    {
+     "id": 10,
+     "name": "lectern_c",
+     "type": "altar",
+     "x": 96,
+     "y": 144,
+     "width": 16,
+     "height": 16,
+     "rotation": 0,
+     "visible": true,
+     "properties": [
+      {
+       "name": "puzzle",
+       "type": "string",
+       "value": "ch3-b"
+      },
+      {
+       "name": "phase",
+       "type": "string",
+       "value": "c"
+      }
+     ]
+    },
+    {
+     "id": 11,
+     "name": "lectern_d",
+     "type": "altar",
+     "x": 272,
+     "y": 144,
+     "width": 16,
+     "height": 16,
+     "rotation": 0,
+     "visible": true,
+     "properties": [
+      {
+       "name": "puzzle",
+       "type": "string",
+       "value": "ch3-b"
+      },
+      {
+       "name": "phase",
+       "type": "string",
+       "value": "d"
+      }
+     ]
+    },
+    {
+     "id": 12,
+     "name": "Pell",
+     "type": "npc",
+     "x": 224,
+     "y": 32,
+     "width": 16,
+     "height": 16,
+     "rotation": 0,
+     "visible": true,
+     "properties": [
+      {
+       "name": "tile",
+       "type": "int",
+       "value": 84
+      },
+      {
+       "name": "dialogue",
+       "type": "string",
+       "value": "pell_ch3"
+      }
+     ]
+    }
+   ],
+   "opacity": 1,
+   "type": "objectgroup",
+   "visible": true,
+   "x": 0,
+   "y": 0
+  }
+ ],
+ "nextlayerid": 5,
+ "nextobjectid": 13,
+ "orientation": "orthogonal",
+ "properties": [
+  {
+   "name": "name",
+   "type": "string",
+   "value": "census_hall"
+  },
+  {
+   "name": "area",
+   "type": "string",
+   "value": "The Census Hall"
+  },
+  {
+   "name": "boss",
+   "type": "string",
+   "value": "hollow_archivist"
+  },
+  {
+   "name": "chapter",
+   "type": "int",
+   "value": 3
+  },
+  {
+   "name": "enter_flag",
+   "type": "string",
+   "value": "entered:grand_directory"
+  }
+ ],
+ "renderorder": "right-down",
+ "tiledversion": "1.11.0",
+ "tileheight": 16,
+ "tilesets": [
+  {
+   "columns": 12,
+   "firstgid": 1,
+   "image": "../../assets/kenney/tiny-dungeon/Tilemap/tilemap_packed.png",
+   "imageheight": 176,
+   "imagewidth": 192,
+   "margin": 0,
+   "name": "tiny-dungeon",
+   "spacing": 0,
+   "tilecount": 132,
+   "tileheight": 16,
+   "tilewidth": 16
+  }
+ ],
+ "tilewidth": 16,
+ "type": "map",
+ "version": "1.10",
+ "width": 24
+}

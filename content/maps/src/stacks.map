@@ -1,0 +1,89 @@
+# The Stacks (Chapter 3): nested halls above the Reading Room, doors labelled like paths.
+# Central hall (/stacks) from the south door. West: the scriptorium (3-05) and its vault
+# (plate room A, chest). North-west: the old maps hall and the toll alcove (3-04, optional).
+# East: the fire-damaged wing (3-06, braziers, a potion). North: the annex L (plate room B,
+# carry the crate round the corner) opens on the flooded lower stacks (3-07), whose door
+# climbs to the Census Hall. Solving 3-07 also opens the aqueduct gate down to the east wing.
+name: stacks
+area: The Stacks
+chapter: 3
+enter_flag: entered:grand_directory
+tilesets: dungeon
+legend:
+  # ground=dungeon:48 wall=dungeon:40,40,40,57,58,59
+  . ground=dungeon:48,48,48,48,49,50,51
+  , ground=dungeon:53
+  B ground=dungeon:48 wall=dungeon:63,63,63,75
+  F ground=dungeon:48 wall=dungeon:40 decor=dungeon:29
+  W ground=dungeon:48 wall=dungeon:28
+  P ground=dungeon:48 wall=dungeon:18
+  D ground=dungeon:48 decor=dungeon:45
+  t ground=dungeon:48 wall=dungeon:72
+  x ground=dungeon:48,48,42,42,49,24
+  r ground=dungeon:42 wall=dungeon:24,12
+  b ground=dungeon:42 wall=dungeon:29
+  ~ ground=dungeon:0 wall=dungeon:0,0,0,12
+  = ground=dungeon:37
+grid:
+########################################D#######
+#.....#.....BBBBB#BBBBBBBBBB#BBB~~~.........~~~#
+#................#BBBBBBBBBB#...~~~.........~~~#
+#.....#..........#BBBBBBBBBB#...~~~..~~........#
+#BBBBB#..........#BBBBBBBBBB#...~~~..~~........#
+#................#B.............~~~............#
+#................#B.........#...~~~............#
+#..BBBB...BBBBB..#B..BBBBBBB#...~~~............#
+#................#B..BBBBBBB#...~~~............#
+#................#B..BBBBBBB#...===............#
+#..BBBB...BBBBB..#B..BBBBBBB#...~~~........~~~.#
+#................#B..BBBBBBB#...~~~.~~~~...~~~.#
+#................#B..BBBBBBB#~~~~~~.~~~~...~~~.#
+#................#B..BBBBBBB#~~~~~~.~~~~.......#
+########.##########..###################.#######
+#BBBB............#............#xxbxxxbxxxbxxxbx#
+#................#......,.....#xxxxxxxxxxxxxxxx#
+#........tt..tt..#..P...,..P..#xxxxxxxxxxxxxxxx#
+#................#......,.....#xxxxxxxxxxxrrxxx#
+#........tt..tt..#......,.....#xxxxxxxxxxxxxxxx#
+#.......................,......xxxxxxxxxxxxxxxx#
+#BBBBBB..........#......,.....#xxxxxxxxxxxxxxxx#
+#.....#..........#......,.....#xxxrrrxxxxxxxxxx#
+#.....#..........#..P...,..P..#xxxxxxxxxxxxxxxx#
+#................#......,.....#xxxxxxxxxxxxxxxx#
+#.....#..........#......,.....#xxxxxxxxxxxxxxxx#
+#BBBBB#..........#......,.....#xxbxxxxxxxxxxxbx#
+########################D#######################
+objects:
+player_spawn spawn 24 25
+player_spawn from_directory 24 25
+player_spawn from_census 40 2
+door /directory/reading-room 24 27 target=grand_directory spawn=from_stacks
+door /stacks/scriptorium 17 20
+door /stacks/east-wing 30 20
+door /stacks/maps/old 8 14
+door /stacks/maps/old/toll 6 2
+# the scriptorium and its vault (plate room A)
+altar ledger_file 11 18 puzzle=ch3-05
+liftable crate_vault 14 23
+plate plate_vault 10 24
+door /stacks/scriptorium/vault 6 24 plate=plate_vault
+chest vault_chest 3 23 coins=25
+# the toll alcove (optional)
+altar toll_function 3 2 puzzle=ch3-04
+# the annex (plate room B): crate at the foot of the L, plate at the far end
+liftable crate_annex 19 12
+plate plate_annex 26 6
+door /stacks/annex/flooded 28 5 plate=plate_annex
+# the fire-damaged east wing
+altar singed_scroll 38 20 puzzle=ch3-06
+potion wing_potion 44 24
+# the flooded lower stacks
+altar aqueduct 40 7 puzzle=ch3-07
+door /stacks/aqueduct 40 14 requires_solved=ch3-07
+door /stacks/census 40 0 target=census_hall spawn=from_stacks requires_solved=ch3-07
+# bugs in the halls
+enemy wisp_maps 10 12 kind=null_wisp
+enemy wisp_flood 42 6 kind=null_wisp
+enemy wisp_wing 39 24 kind=null_wisp
+enemy obo_scriptorium 12 23 kind=off_by_one
+enemy obo_hall 21 20 kind=off_by_one

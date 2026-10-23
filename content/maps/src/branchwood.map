@@ -1,0 +1,90 @@
+# Branchwood (Chapter 2): the north gate of the Crossroads opens onto the south bank. The
+# first fork splits west to the weighbridge over the gorge (2-01) and east to an overlook
+# with a chest. Across the bridge a second fork: north to Sable's lodge (Spyglass, 2-02,
+# the waystone), east into the darker glade of null-wisps. Past the glade the crow letter
+# waits on a stump, and the road east to the Mire is coiled with loopers.
+name: branchwood
+area: Branchwood
+chapter: 2
+enter_flag: entered:branchwood
+tilesets: town dungeon
+legend:
+  . ground=town:0,0,0,0,0,1,2
+  * ground=town:2,1
+  , ground=town:25
+  T ground=town:0 wall=town:16,16,16,4,28,4
+  b ground=town:0 wall=town:5
+  ~ ground=dungeon:0 wall=dungeon:0,0,0,12
+  _ ground=dungeon:24
+  p ground=town:0 wall=town:59
+  g ground=town:0,0,0,1
+  : ground=town:0 decor=town:29
+  L ground=town:0 decor=town:106
+  ( ground=town:0 wall=town:52
+  " ground=town:0 wall=town:53
+  ) ground=town:0 wall=town:54
+  / ground=town:0 wall=town:64
+  ' ground=town:0 wall=town:65
+  \ ground=town:0 wall=town:66
+  ! ground=town:0 wall=town:76
+  ; ground=town:0 wall=town:77
+  ? ground=town:0 wall=town:79
+grid:
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+TT........TTTTTgggggggggggTTTTTTTTTTTTTTTTTTTTTT
+TT(""")....TTTggggggggg:gggTT....TTTTTTTTTTTTTTT
+TT/'''\.b...Tggg:ggggggggggg..L...TTTTTTTTTTTTTT
+TT!;;;?.....Tggggggggggggggg......TTTTTTTTTTTTTT
+TT..,.......TggggggTTgggg:g,,,,,,.TTTTTTTTTTTTTT
+TT..,...*...Tgg:gggTgg:ggggg....,.TTTTTTTTTTTTTT
+TT..,.......TgggggggggggggggT...,.TTTTTTTTTTTTTT
+TT..,,,,,,,,,,ggggggggggggggTTTT,TTTTTTTTTTTTTTT
+TT...,......Tgggg:gggggg:gggTTTT..............TT
+TT...,......TTgggggggggggggTTTT................T
+TT*..,...b..TTTgggggggggggTTTTT.,,,,,,,,,,,,,,,,
+TT...,......TTTTTTTTTTTTTTTTTTT.,,,,,,,,,,,,,,,T
+TTT..,..TTTTTTTTTTTTTTTTTTTTTTT................T
+TTT..,..TTTTTTTTTTTTTTTTTTTTTTTT..............TT
+T~~~p_p~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~T
+T~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~T
+T~~~p_p~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~T
+TTTTT,TTTTTTTTTTTTTTTTTTTTTT...........TTTTTTTTT
+TT...,.........TT.......T.....,.............TTTT
+T....,.....................*..,..........TT...TT
+T....,,,,,,,,,,,,,,,,,,,,,,,,,,...............TT
+T.........,.......*...........................TT
+T.........,...b...........b...................TT
+T.T....*..,.........TT.............*..........TT
+TT........,...........................b...T.TTTT
+TTTTTTTTTT,TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+objects:
+player_spawn spawn 10 25
+player_spawn from_crossroads 10 25
+player_spawn bridge_south 5 20
+player_spawn over_bridge 5 14
+player_spawn from_mire 45 12
+door to_crossroads 10 27 target=crossroads spawn=from_branchwood
+# the first fork: the weighbridge (west) holds only once 2-01 weighs the load
+altar weighbridge 4 20 puzzle=ch2-01
+door weighbridge 5 18 target=branchwood spawn=over_bridge requires_solved=ch2-01
+door bridge_back 5 16 target=branchwood spawn=bridge_south
+# the other fork: an overlook on the gorge
+chest overlook_chest 36 21 coins=10
+potion overlook_tonic 38 20
+# Sable's lodge (north of the second fork)
+npc sable 5 7 tile=88
+altar bestiary 7 6 puzzle=ch2-02
+waystone branchwood 7 10 tile=83 sheet=town
+# the darker glade: only hittable while locked on with v
+enemy wisp_a 17 5 kind=null_wisp hp=2
+enemy wisp_b 23 5 kind=null_wisp hp=2
+enemy wisp_c 21 10 kind=null_wisp hp=2
+# Tally's crow letter on a stump by the path
+npc crow_letter 30 4 tile=120
+# the looper road to the Mire
+enemy looper_a 35 11 kind=looper hp=4
+enemy looper_b 42 11 kind=looper hp=4
+enemy looper_c 37 14 kind=looper hp=4
+enemy looper_d 43 14 kind=looper hp=4
+door to_mire 47 12 target=looping_mire spawn=from_branchwood

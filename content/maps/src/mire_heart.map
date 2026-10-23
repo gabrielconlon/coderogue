@@ -1,0 +1,53 @@
+# The Mire's heart (Chapter 2 boss): a railed ring where the Ouroboros circles. Three
+# loop-stones sit around the ring, one per phase of 2-B. The south door leads back to the
+# Mire; the north door opens on the road to the Grand Directory once the worm unwinds.
+name: mire_heart
+area: The Mire's Heart
+chapter: 2
+enter_flag: entered:looping_mire
+boss: ouroboros
+tilesets: dungeon
+legend:
+  # ground=dungeon:48 wall=dungeon:40,40,40,57,58,59
+  . ground=dungeon:48,48,48,48,49,50,51
+  F ground=dungeon:48 wall=dungeon:40 decor=dungeon:29
+  [ ground=dungeon:48 wall=dungeon:69
+  ^ ground=dungeon:48 wall=dungeon:70
+  ] ground=dungeon:48 wall=dungeon:71
+  { ground=dungeon:48 wall=dungeon:81
+  } ground=dungeon:48 wall=dungeon:83
+  < ground=dungeon:48 wall=dungeon:93
+  _ ground=dungeon:48 wall=dungeon:94
+  > ground=dungeon:48 wall=dungeon:95
+  | ground=dungeon:48 wall=dungeon:6
+  c ground=dungeon:42
+  D ground=dungeon:48 decor=dungeon:46
+  E ground=dungeon:48 decor=dungeon:46
+grid:
+########################
+###F####F##E###F####F###
+#......................#
+#.|.[^^^^^^..^^^^^^].|.#
+#...{..............}...#
+#...{..............}...#
+#...{..............}...#
+#...{......cc......}...#
+#.........cccc.........#
+#...{......cc......}...#
+#...{..............}...#
+#...{..............}...#
+#...{..............}...#
+#.|.<______..______>.|.#
+#......................#
+###########D############
+objects:
+player_spawn spawn 11 14
+player_spawn from_mire 11 14
+player_spawn from_directory 11 2
+door exit @D target=looping_mire spawn=from_heart
+door to_directory @E target=grand_directory spawn=from_heart requires_solved=ch2-b
+enemy Ouroboros 11 8 kind=boss boss=ouroboros hp=12
+altar loop_stone_a 6 5 puzzle=ch2-b phase=a
+altar loop_stone_b 17 5 puzzle=ch2-b phase=b
+altar loop_stone_c 11 12 puzzle=ch2-b phase=c
+npc pell_ch2 13 14 tile=121
