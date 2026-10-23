@@ -1,0 +1,90 @@
+# Little Tilde (Prologue): the scriptorium (south-west), the square with the village
+# lantern altar and Pell's ward, the herb garden (east) and the north gate to Echo Vale.
+name: little_tilde
+area: Little Tilde
+chapter: 0
+enter_flag: entered:little_tilde
+tilesets: town dungeon
+legend:
+  . ground=town:0,0,0,0,0,1,2
+  * ground=town:2,1
+  , ground=town:25
+  T ground=town:0 wall=town:16,16,16,4,28
+  b ground=town:0 wall=town:5
+  - ground=town:0 wall=town:81
+  | ground=town:0 wall=town:59
+  W ground=town:25 wall=town:126,126,125
+  n ground=town:25 above=town:113
+  1 ground=town:96
+  2 ground=town:97
+  3 ground=town:98
+  4 ground=town:108
+  5 ground=town:109
+  6 ground=town:110
+  7 ground=town:120
+  8 ground=town:121
+  9 ground=town:122
+  < ground=town:0 wall=town:48
+  ^ ground=town:0 wall=town:49
+  > ground=town:0 wall=town:50
+  { ground=town:0 wall=town:60
+  m ground=town:0 wall=town:61
+  } ground=town:0 wall=town:62
+  [ ground=town:0 wall=town:72
+  w ground=town:0 wall=town:84
+  ] ground=town:0 wall=town:75
+  ( ground=town:0 wall=town:52
+  " ground=town:0 wall=town:53
+  ) ground=town:0 wall=town:54
+  / ground=town:0 wall=town:64
+  ' ground=town:0 wall=town:65
+  \ ground=town:0 wall=town:66
+  ! ground=town:0 wall=town:76
+  ; ground=town:0 wall=town:77
+  ? ground=town:0 wall=town:79
+  D ground=town:78
+  g ground=town:25
+  h ground=town:25 decor=town:17,29
+  o ground=town:109 wall=dungeon:20
+grid:
+TTTTTTTTTTTTTTTWWWWnWWWWWTTTTTTTTTTTTTTT
+TT.................,..................TT
+TT..........*......,....*.............TT
+TT..<^>............,..........("")....TT
+T...{m}..<^>.......,......<^>./''\....TT
+T...[w]..{m}.......,......{m}.!;;?....TT
+T........[w].b.....,......[w]..........T
+T..................,......b............T
+T.............122222222223.............T
+T..*..........4555555o5556.......*.....T
+T.......*.....455555555556.............T
+TT............455555555556,,,,,,...b...T
+TT*...........455555555556.....,.......T
+TT..(""").b...455555555556.....,.......T
+TT../'''\.....788888888889.----,-----..T
+TT..!;D;?..........,.......|hghggghg|..T
+TT....,............,.......|gggghggg|..T
+TT....,,,,,,,,,,,,,,....b..|ghgggggg|..T
+TT.........................|gggggggh|.TT
+TT.........................|hgggghgg|.TT
+TT..........*.........*....----------.TT
+TT....................................TT
+TTTTTTTTTTTT................TTTTTTTTTTTT
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+objects:
+player_spawn spawn 6 16
+player_spawn from_scriptorium 6 16
+player_spawn from_vale 19 2
+door to_scriptorium @D target=little_tilde_scriptorium spawn=from_village
+door north_gate 19 0 target=echo_vale spawn=from_tilde requires_solved=ch0-03
+altar village_lantern 16 9 puzzle=ch0-01
+npc quill_echo 17 10 tile=66
+altar gate_chant 17 2 puzzle=ch0-02
+altar pell_ward 22 12 puzzle=ch0-03
+npc Cole 22 2 tile=96
+waystone tilde 21 2 tile=83 sheet=town
+npc Moth 33 12 tile=120
+enemy mite_a 29 16 kind=typo_mite hp=1 tile=122
+enemy mite_b 33 17 kind=typo_mite hp=1 tile=122
+enemy mite_c 30 19 kind=typo_mite hp=1 tile=122
+chest garden_chest 35 21 coins=5

@@ -1,0 +1,43 @@
+# The scriptorium in Little Tilde: Wren wakes at the copy desk (Prologue beat 1).
+# The vault is the cellar room to the east; Pell shoves Wren in there when the Null comes.
+name: little_tilde_scriptorium
+area: Little Tilde Scriptorium
+chapter: 0
+enter_flag: entered:little_tilde
+tilesets: dungeon
+legend:
+  # ground=dungeon:48 wall=dungeon:40,40,40,57,58,59
+  . ground=dungeon:48,48,48,48,49,50,51
+  , ground=dungeon:0,0,12,24
+  S ground=dungeon:48 wall=dungeon:63
+  I ground=dungeon:48 wall=dungeon:63
+  s ground=dungeon:48 wall=dungeon:75
+  F ground=dungeon:48 wall=dungeon:40 decor=dungeon:29
+  t ground=dungeon:48 wall=dungeon:72
+  p ground=dungeon:48 wall=dungeon:72 decor=dungeon:115
+  c ground=dungeon:48 decor=dungeon:73
+  x ground=dungeon:0 wall=dungeon:82
+  r ground=dungeon:48 decor=dungeon:66
+  P ground=dungeon:48
+  V ground=dungeon:48 decor=dungeon:45
+  D ground=dungeon:48 decor=dungeon:46
+grid:
+####################
+#SSSSISSS#F##F#,,,,#
+#.............#,,,x#
+#..ttt..P.....V,,,,#
+#...c.........#,,,x#
+#.............######
+#..................#
+#ss........t....pt.#
+#..................#
+#.rrr..............#
+#..................#
+#########D##########
+objects:
+player_spawn spawn 4 4
+player_spawn from_village 9 10
+npc Pell @P tile=84
+npc ink_shelf @I tile=63
+door to_village @D target=little_tilde spawn=from_scriptorium
+potion vault_tonic 16 3

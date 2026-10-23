@@ -1,0 +1,48 @@
+# The Hall of Echoes (Chapter 1 boss): a railed arena with three lecterns, one per phase
+# of 1-B. Grubble, the Typo King, holds the dais in the middle.
+name: hall_of_echoes
+area: Hall of Echoes
+chapter: 1
+enter_flag: entered:echo_vale
+boss: grubble
+tilesets: dungeon
+legend:
+  # ground=dungeon:48 wall=dungeon:40,40,40,57,58,59
+  . ground=dungeon:48,48,48,48,49,50,51
+  F ground=dungeon:48 wall=dungeon:40 decor=dungeon:29
+  [ ground=dungeon:48 wall=dungeon:69
+  ^ ground=dungeon:48 wall=dungeon:70
+  ] ground=dungeon:48 wall=dungeon:71
+  { ground=dungeon:48 wall=dungeon:81
+  } ground=dungeon:48 wall=dungeon:83
+  < ground=dungeon:48 wall=dungeon:93
+  _ ground=dungeon:48 wall=dungeon:94
+  > ground=dungeon:48 wall=dungeon:95
+  | ground=dungeon:48 wall=dungeon:6
+  c ground=dungeon:42
+  D ground=dungeon:48 decor=dungeon:46
+grid:
+########################
+###F####F######F####F###
+#......................#
+#.|.[^^^^^^^^^^^^^^].|.#
+#...{..............}...#
+#...{..............}...#
+#...{......cc......}...#
+#...{......cc......}...#
+#...{..............}...#
+#...{..............}...#
+#...{..............}...#
+#...{..............}...#
+#.|.<_____...._____>.|.#
+#......................#
+#......................#
+###########D############
+objects:
+player_spawn spawn 11 14
+player_spawn from_crossroads 11 14
+door exit @D target=echo_vale spawn=from_hall
+enemy Grubble 11 6 kind=boss boss=grubble hp=12 tile=110
+altar lectern_a 7 5 puzzle=ch1-b phase=a
+altar lectern_b 16 5 puzzle=ch1-b phase=b
+altar lectern_c 11 10 puzzle=ch1-b phase=c

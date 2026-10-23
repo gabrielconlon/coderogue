@@ -1,0 +1,117 @@
+# Echo Vale (Chapter 1): word-stones over the stream at the south entrance, the open
+# field, Murmurby (north-west), the lamplighter's nook (west), the toll bridge over the
+# river, the orchard and the ferry to the Crossroads (east bank).
+name: echo_vale
+area: Echo Vale
+chapter: 1
+enter_flag: entered:echo_vale
+tilesets: town dungeon
+legend:
+  . ground=town:0,0,0,0,0,1,2
+  * ground=town:2,1
+  , ground=town:25
+  T ground=town:0 wall=town:16,16,16,4,28
+  b ground=town:0 wall=town:5
+  ~ ground=dungeon:0 wall=dungeon:0,0,0,12
+  - ground=town:0 wall=town:81
+  | ground=town:0 wall=town:59
+  1 ground=town:96
+  2 ground=town:97
+  3 ground=town:98
+  4 ground=town:108
+  5 ground=town:109
+  6 ground=town:110
+  7 ground=town:120
+  8 ground=town:121
+  9 ground=town:122
+  < ground=town:0 wall=town:48
+  ^ ground=town:0 wall=town:49
+  > ground=town:0 wall=town:50
+  { ground=town:0 wall=town:60
+  m ground=town:0 wall=town:61
+  } ground=town:0 wall=town:62
+  [ ground=town:0 wall=town:72
+  w ground=town:0 wall=town:84
+  ] ground=town:0 wall=town:75
+  ( ground=town:0 wall=town:52
+  " ground=town:0 wall=town:53
+  ) ground=town:0 wall=town:54
+  / ground=town:0 wall=town:64
+  ' ground=town:0 wall=town:65
+  \ ground=town:0 wall=town:66
+  ! ground=town:0 wall=town:76
+  ; ground=town:0 wall=town:77
+  ? ground=town:0 wall=town:79
+  D ground=town:25
+  o ground=town:43
+  _ ground=dungeon:24
+  = ground=dungeon:37
+  A ground=town:0 wall=town:28
+grid:
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT~~~TTTTTTTTTTT
+TT.<^>.(""").<^>..................~~~.........TT
+TT.{m}./'''\.{m}.......T......T...~~~.........TT
+TT.[w].!;;;?.[w]..................~==,,.......TT
+TT...122222222223..........T......~~~.,....T..TT
+TT...455555555556.<^>.............~~~.,.......TT
+TT...455555555556.{m}....T........~~~.,.......TT
+TTbb.455555555556.[w].............~~~.,.T.....TT
+TT...455555555556..............,,==~=,,.......TT
+TT...455555555556..............,..~~~.,.....T.TT
+TT...78888,888889..............,..~~~.,.......TT
+TT........,,,,,,,,,,,,,,,,,,,,,,..~~~.,.......TT
+TT........,.......................~~~.,.......TT
+T.....*...,.................*.....~~~.,-------TT
+T.TTTT....,.......*...............~~~.,|.....|TT
+T..,,,,,,,,...........*...........~~~.,,.A.A.|TT
+TTTTTT....,.......................~~~..|.....|TT
+TT........,..............*........~~~..|.....|TT
+TT..*.....,...*...................~~~..|.A.A.|TT
+TT........,,......................~~~..|.....|TT
+T~~~~~~~~~oo~~~~~~~~~~~~~~~~~~~~~~~~~..|.....|TT
+T~~~~~~~~~__~~~~~~~~~~~~~~~~~~~~~~~~~..|.A.A.|TT
+T~~~~~~~~~oo~~~~~~~~~~~~~~~~~~~~~~~~~..|.....|TT
+T~~~~~~~~~__~~~~~~~~~~~~~~~~~~~~~~~~~..|.....|TT
+TT........,.......................~~~..-------TT
+TT........,.......................~~~.........TT
+TT........,.......................~~~.........TT
+TTTTTTTTTTDTTTTTTTTTTTTTTTTTTTTTTT~~~TTTTTTTTTTT
+objects:
+player_spawn spawn 10 25
+player_spawn from_tilde 10 25
+player_spawn from_crossroads 37 3
+player_spawn from_hall 12 8
+player_spawn over_bridge 37 8
+player_spawn bridge_west 32 8
+door to_tilde @D target=little_tilde spawn=from_vale
+npc pip 12 24 tile=98
+altar namestone 11 12 puzzle=ch1-01
+npc namestone_sign 9 12 tile=65
+npc Quill 9 4 tile=86
+npc Mara 7 7 tile=99 dialogue=villager_mara
+npc Orrin 19 9 tile=97 dialogue=villager_orrin
+npc Dill 4 9 tile=85 dialogue=villager_dill
+altar town_crier 13 6 puzzle=ch1-06
+npc town_crier 14 6 tile=100
+waystone murmurby 15 9 tile=83 sheet=town
+npc Cole 16 8 tile=96 dialogue=cole_murmurby
+npc Pell 14 9 tile=121 dialogue=pell_ch1
+altar lamplighter 2 15 puzzle=ch1-02
+npc lamplighter 1 14 tile=97
+enemy obo_a 16 14 kind=off_by_one hp=2 tile=123
+enemy obo_b 24 16 kind=off_by_one hp=2 tile=123
+enemy obo_c 21 13 kind=off_by_one hp=2 tile=123
+enemy mite_a 6 17 kind=typo_mite hp=1 tile=122
+enemy mite_b 28 15 kind=typo_mite hp=1 tile=122
+potion field_tonic 26 9
+altar toll_bridge 32 9 puzzle=ch1-03
+npc toll_keeper 32 7 tile=87
+door toll_gate 34 8 target=echo_vale spawn=over_bridge requires_solved=ch1-03
+door bridge_back 36 8 target=echo_vale spawn=bridge_west
+altar ferry 39 3 puzzle=ch1-05
+npc ferryman 37 2 tile=111
+door ferry 35 3 target=crossroads spawn=from_vale requires_solved=ch1-05
+altar apples 42 20 puzzle=ch1-04
+enemy leak_a 42 17 kind=leak hp=2 tile=108
+enemy leak_b 40 22 kind=leak hp=2 tile=108
+enemy leak_c 44 23 kind=leak hp=2 tile=108

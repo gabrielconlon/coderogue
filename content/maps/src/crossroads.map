@@ -1,0 +1,82 @@
+# The Crossroads (Chapter 1): the ferry landing (south), Tally's Inn and its counter
+# (west), the waystone at the crossing, and the Hall of Echoes (east).
+name: crossroads
+area: The Crossroads
+chapter: 1
+enter_flag: entered:echo_vale
+tilesets: town dungeon
+legend:
+  . ground=town:0,0,0,0,0,1,2
+  * ground=town:2,1
+  , ground=town:25
+  T ground=town:0 wall=town:16,16,16,4,28
+  b ground=town:0 wall=town:5
+  ~ ground=dungeon:0 wall=dungeon:0,0,0,12
+  W ground=town:25 wall=town:126,126,125
+  n ground=town:25 above=town:113
+  1 ground=town:96
+  2 ground=town:97
+  3 ground=town:98
+  4 ground=town:108
+  5 ground=town:109
+  6 ground=town:110
+  7 ground=town:120
+  8 ground=town:121
+  9 ground=town:122
+  < ground=town:0 wall=town:48
+  ^ ground=town:0 wall=town:49
+  > ground=town:0 wall=town:50
+  { ground=town:0 wall=town:60
+  m ground=town:0 wall=town:61
+  } ground=town:0 wall=town:62
+  [ ground=town:0 wall=town:72
+  w ground=town:0 wall=town:84
+  ] ground=town:0 wall=town:75
+  ( ground=town:0 wall=town:52
+  " ground=town:0 wall=town:53
+  ) ground=town:0 wall=town:54
+  / ground=town:0 wall=town:64
+  ' ground=town:0 wall=town:65
+  \ ground=town:0 wall=town:66
+  ! ground=town:0 wall=town:76
+  ; ground=town:0 wall=town:77
+  ? ground=town:0 wall=town:79
+  = ground=dungeon:37
+  N ground=town:0 wall=town:83
+  G ground=town:25 wall=town:112
+grid:
+TTTTTTTTTTTTTTTTTTWGWTTTTTTTTTTTTTTTTTTT
+TT.................,..................TT
+TT.................,..................TT
+TT..............b..,....<^>...........TT
+TT.....(""""").....,....{m}...*.......TT
+TT...../'''''\.....,....[w]...........TT
+TT.....!;;N;;?.....,..b...........WWWWWT
+T..b...............,..............WWWWWT
+T.....1222222223...,..............WWWWWT
+T.....4555555556...,.....*........WWWWWT
+T.....7888888889...,..............WWWWWT
+TT,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,nWWWWT
+T........,.........,..............WWWWWT
+T........,.........,..............WWWWWT
+T........,....*....,........<^>...WWWWWT
+T...*....,.........,........{m}...WWWWWT
+T........,...b.....,........[w]...WWWWWT
+T........,.........,...*...............T
+T........,,,,,,,,,,,...................T
+T..................,...................T
+~~~~~~~~==~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~==~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+objects:
+player_spawn spawn 8 19
+player_spawn from_vale 8 19
+player_spawn from_hall 32 11
+door ferry_back 8 21 target=echo_vale spawn=from_crossroads
+npc Tally 10 9 tile=112
+altar receipt 12 9 puzzle=ch1-07
+chest inn_chest 14 9 coins=15
+waystone crossroads 21 13 tile=83 sheet=town
+npc Cole 22 12 tile=96 dialogue=cole_crossroads
+door hall_gate 34 11 target=hall_of_echoes spawn=from_crossroads requires_solved=ch1-07

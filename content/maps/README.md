@@ -62,3 +62,50 @@ Give objects a `name` so scripts and puzzles can refer to them.
 ```
 
 `test_room.tmj` is the reference example.
+
+## Authoring with mapgen
+
+The story maps are generated from readable ASCII sources in `content/maps/src/*.map` by
+`tools/mapgen.py`. Edit the `.map`, then regenerate; never hand-edit a generated `.tmj`.
+
+```
+.venv/bin/python tools/mapgen.py                    # regenerate every src/*.map
+.venv/bin/python tools/mapgen.py content/maps/src/echo_vale.map
+.venv/bin/python tools/mapgen.py --check            # CI: fail if a .tmj is stale
+```
+
+A source has four parts:
+
+```
+# comments start with '#' (in the legend, use '##' since '#' is a valid tile char)
+name: echo_vale                  # output stem: content/maps/echo_vale.tmj
+area: Echo Vale                  # every other header key becomes a map property
+chapter: 1                       #   (ints/floats/true/false are typed)
+enter_flag: entered:echo_vale
+tilesets: town dungeon           # town firstgid 1, dungeon firstgid 133; first is default
+seed: 3                          # optional; random picks default to crc32(name)
+legend:
+  . ground=town:0,0,0,1,2        # comma list = seeded random pick per cell
+  T ground=town:0 wall=town:16,4 # wall= goes on the solid `walls` layer
+  ~ ground=dungeon:0 wall=dungeon:0,12   # bare ids reuse the previous sheet
+  D ground=town:25 decor=town:85 # decor= / above= for the optional layers
+grid:
+TTTTTDTTTT                       # one char per tile; rows must be equal width
+T........T
+objects:
+player_spawn spawn 4 1           # type name x y (tile coords) key=value ...
+altar namestone @A puzzle=ch1-01 # @A = the single cell holding legend char A
+door to_tilde @D target=little_tilde spawn=from_vale requires_solved=ch0-03
+npc Mara 7 7 tile=99 dialogue=villager_mara
+waystone murmurby 15 9 tile=83 sheet=town
+```
+
+Conventions used by the story maps:
+
+- The first `player_spawn` must be named `spawn` (the scene uses the first one); add one
+  `from_<map>` spawn per door that leads here, next to (not on) the door.
+- A door that must stay shut until a puzzle is solved also needs the far side to be
+  physically unreachable (water, a broken bridge span, a wall); the door teleports.
+- NPC `tile`/enemy `tile` are Tiny Dungeon ids unless the object sets `sheet=town`.
+- `tests/test_mapgen.py` checks door targets and spawns, altar puzzle ids, NPC dialogue
+  keys, enemy kinds, that objects are not inside walls, and that `--check` is clean.
