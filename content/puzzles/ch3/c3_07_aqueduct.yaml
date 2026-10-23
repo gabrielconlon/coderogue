@@ -1,0 +1,93 @@
+id: ch3-07
+title: The Pipe-Aqueduct
+chapter: 3
+order: 7
+optional: false
+concepts: [pipelines, composition, filtering, sorting, uniqueness]
+vim_skill: "yy and p on whole lines"
+lore: |
+  The fire-damaged stacks need water, and the only way to carry it is through
+  a pipe-aqueduct: one stage filters, the next sorts, the next trims, and
+  what comes out of the end is clean. Dex keeps a roster of the bookworms in
+  bugs.txt, but it is full of comment lines starting with # and the same
+  names over and over. Print each name once, in alphabetical order, then print
+  how many different names there are.
+fixtures:
+  - path: bugs.txt
+    content: |
+      # Bookworm roster, compiled by Dex
+      moth
+      weevil
+      # the night shift
+      beetle
+      moth
+      ant
+      # (do not feed)
+      wasp
+      ant
+      weevil
+      beetle
+limits: {timeout_s: 2, max_stdout_kb: 16}
+languages:
+  python:
+    starter: |
+      # Skip the # lines, keep each name once, then show them in order.
+      names = set()
+      for line in open("bugs.txt"):
+          line = line.strip()
+          if line and not line.startswith("___"):
+              names.___(line)
+      for name in ___(names):
+          print(name)
+      print(len(names))
+    hints:
+      - &aqueduct_h1 "Ignore the comment lines, collect each name only once, print the names alphabetically, and finish with the number of different names."
+      - "A set keeps each value only once. Test a line with startswith(\"#\"), add to the set with .add(), and sorted() lists the names alphabetically."
+      - "Blanks, in order: #   add   sorted"
+    solution: |
+      names = set()
+      for line in open("bugs.txt"):
+          line = line.strip()
+          if line and not line.startswith("#"):
+              names.add(line)
+      for name in sorted(names):
+          print(name)
+      print(len(names))
+  bash:
+    starter: |
+      # Pipes carry the output of one command into the next.
+      names=$(grep -v '^___' bugs.txt | sort ___)
+      echo "$names"
+      echo "$names" | wc -l
+    hints:
+      - *aqueduct_h1
+      - "grep -v keeps the lines that do NOT match, so grep -v '^#' drops comments. sort -u sorts and removes duplicates in one go, and wc -l counts the lines."
+      - "Blanks, in order: #   -u"
+    solution: |
+      names=$(grep -v '^#' bugs.txt | sort -u)
+      echo "$names"
+      echo "$names" | wc -l
+  powershell:
+    starter: |
+      # Pipes carry the output of one command into the next.
+      $names = Get-Content bugs.txt | Where-Object { $_ -notlike '___*' } | Sort-Object ___
+      $names
+      @($names).Count
+    hints:
+      - *aqueduct_h1
+      - "-notlike '#*' keeps the lines that do not start with #. Sort-Object -Unique sorts and removes duplicates, and .Count on the result gives how many names are left."
+      - "Blanks, in order: #   -Unique"
+    solution: |
+      $names = Get-Content bugs.txt | Where-Object { $_ -notlike '#*' } | Sort-Object -Unique
+      $names
+      @($names).Count
+tests:
+  - name: "Five different bookworms"
+    expect:
+      stdout_regex: '\A\s*ant\nbeetle\nmoth\nwasp\nweevil\n\s*5\s*\Z'
+      exit_code: 0
+reward:
+  xp: 60
+  items: [aqueduct_valve]
+  unlocks: []
+  world_effect: "Water chuckles down the pipe-aqueduct and the charred stacks steam, darken and shine."

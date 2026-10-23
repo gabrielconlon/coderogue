@@ -1,0 +1,96 @@
+id: ch3-03
+title: The Greeting Rite
+chapter: 3
+order: 3
+optional: false
+concepts: [functions, parameters, return-values]
+vim_skill: "n (jump to the next search match)"
+lore: |
+  Stamp-golems block the Reading Room. They are made of rubber and they accept
+  exactly one thing: a proper greeting, delivered the same way every time.
+  Write the rite once as a function, then call it for each name in the party.
+  Dex, Wren and Pell, in that order. "Say it three times," the head golem
+  stamps, "but write it once."
+limits: {timeout_s: 2, max_stdout_kb: 16}
+languages:
+  python:
+    starter: |
+      # Define the rite once, then use it three times.
+      ___ greet(name):
+          return "Hail, " + name + "!"
+
+      print(greet("Dex"))
+      print(greet("Wren"))
+      print(greet(___))
+    hints:
+      - &greet_h1 "Write the greeting once as a function that takes a name, then call it for Dex, Wren and Pell. Each call prints 'Hail, <name>!'."
+      - "A function is defined with a keyword, a name, and parameters in brackets. Whatever you hand it when you call it lands in the parameter."
+      - "Blanks, in order: def   \"Pell\""
+    solution: |
+      def greet(name):
+          return "Hail, " + name + "!"
+
+      print(greet("Dex"))
+      print(greet("Wren"))
+      print(greet("Pell"))
+    source_checks:
+      - pattern: '\bdef\s+greet\s*\('
+        message: "The output is right, but the Terminal wants to see the rite defined as a function: def greet(name):."
+  bash:
+    starter: |
+      # Define the rite once, then use it three times.
+      greet() {
+        echo "Hail, ___!"
+      }
+
+      greet Dex
+      greet Wren
+      greet ___
+    hints:
+      - *greet_h1
+      - "Inside a bash function, the first thing you pass it is $1, the second is $2, and so on. Call it by writing its name followed by the argument."
+      - "Blanks, in order: $1   Pell"
+    solution: |
+      greet() {
+        echo "Hail, $1!"
+      }
+
+      greet Dex
+      greet Wren
+      greet Pell
+    source_checks:
+      - pattern: '^\s*(function\s+greet\b|greet\s*\(\s*\))'
+        message: "The output is right, but the Terminal wants to see the rite defined as a function: greet() { ... }."
+  powershell:
+    starter: |
+      # Define the rite once, then use it three times.
+      function Greet($name) {
+        return "Hail, ___!"
+      }
+
+      Write-Output (Greet "Dex")
+      Write-Output (Greet "Wren")
+      Write-Output (Greet ___)
+    hints:
+      - *greet_h1
+      - "A function takes its parameters in brackets after its name, and a parameter is used like any variable. Call it with the argument after its name and wrap the call in brackets to print the result."
+      - "Blanks, in order: $name   \"Pell\""
+    solution: |
+      function Greet($name) {
+        return "Hail, $name!"
+      }
+
+      Write-Output (Greet "Dex")
+      Write-Output (Greet "Wren")
+      Write-Output (Greet "Pell")
+    source_checks:
+      - pattern: '(?im)^\s*function\s+greet\b'
+        message: "The output is right, but the Terminal wants to see the rite defined as a function: function Greet($name) { ... }."
+tests:
+  - name: "Three greetings"
+    expect: {stdout: "Hail, Dex!\nHail, Wren!\nHail, Pell!\n", exit_code: 0}
+reward:
+  xp: 50
+  items: [stamp_of_welcome]
+  unlocks: ["vim:n"]
+  world_effect: "The stamp-golems bow, stamp the air in approval, and the Reading Room doors swing open."

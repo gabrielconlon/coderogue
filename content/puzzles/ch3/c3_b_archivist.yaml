@@ -1,0 +1,414 @@
+id: ch3-b
+title: "Boss: The Hollow Archivist"
+chapter: 3
+order: 8
+optional: false
+concepts: [files, dictionaries, functions, csv, sorting]
+vim_skill: "yy/p to expose it, / to find the real catalogue, marks between phases"
+lore: |
+  In the Census Hall, the Hollow Archivist, an echo of Morrow stitched from
+  torn index cards, is eating the name cards one by one. It teleports between
+  shelves and throws card-storms. Yank its shield-cards, put them back in the
+  catalogue slots, and when it flickers, step to a lectern and write. Four
+  lecterns, four spells: read the census, judge each card, tally each village,
+  and write the register that gives the names back.
+limits: {timeout_s: 2, max_stdout_kb: 16}
+phases:
+  - title: "Lectern A: Read the Census"
+    lore: |
+      The census lives in census.csv, one card per line: name, village,
+      status. Before anything else, count the cards. If the Archivist has
+      eaten any, you will at least know how many remain.
+    fixtures: &census
+      - path: census.csv
+        content: |
+          Pell,Little Tilde,nulled
+          Wren,Little Tilde,whole
+          Mara,Echo Vale,nulled
+          Tobin,Echo Vale,whole
+          Sera,Branchwood,nulled
+          Hobb,Branchwood,nulled
+          Ink,Crossroads,whole
+          Alder,Crossroads,nulled
+          Fenn,Murmurby,whole
+          Odo,Murmurby,nulled
+    languages:
+      python:
+        starter: |
+          # Count the records in census.csv. Each line is: name,village,status
+          count = 0
+          for line in open("census.csv"):
+              count = count + ___
+          print("Records:", count)
+        hints:
+          - &boss3a_h1 "Read census.csv line by line and count the lines. Print 'Records: ' followed by the number."
+          - "A for loop over an open file gives you one line per pass. Add one to a counter each time round."
+          - "Blank: 1"
+        solution: |
+          count = 0
+          for line in open("census.csv"):
+              count = count + 1
+          print("Records:", count)
+      bash:
+        starter: |
+          # Count the records in census.csv. Each line is: name,village,status
+          count=0
+          while IFS=, read -r name village status; do
+            count=$((count + ___))
+          done < census.csv
+          echo "Records: $count"
+        hints:
+          - *boss3a_h1
+          - "IFS=, makes read split each line at the commas. The loop runs once per line, so add one to the counter each time."
+          - "Blank: 1"
+        solution: |
+          count=0
+          while IFS=, read -r name village status; do
+            count=$((count + 1))
+          done < census.csv
+          echo "Records: $count"
+      powershell:
+        starter: |
+          # Count the records in census.csv. Each line is: name,village,status
+          $count = 0
+          foreach ($line in Get-Content census.csv) {
+            $count = $count + ___
+          }
+          Write-Output "Records: $count"
+        hints:
+          - *boss3a_h1
+          - "Get-Content gives one entry per line, and a foreach loop visits them one at a time. Add one to a counter each time round."
+          - "Blank: 1"
+        solution: |
+          $count = 0
+          foreach ($line in Get-Content census.csv) {
+            $count = $count + 1
+          }
+          Write-Output "Records: $count"
+    tests:
+      - name: "Ten cards in the census"
+        expect: {stdout: "Records: 10\n", exit_code: 0}
+  - title: "Lectern B: Who Is Nulled?"
+    lore: |
+      The Archivist keeps asking the same question of every card: is this soul
+      nulled? Stop answering it by hand. Write a function that decides it from
+      a status, then use it to print the name on every nulled card, in the
+      order the cards appear.
+    fixtures: *census
+    languages:
+      python:
+        starter: |
+          # is_nulled(status) is True when the status is "nulled".
+          def is_nulled(status):
+              return status ___ "nulled"
+
+          for line in open("census.csv"):
+              name, village, status = line.strip().split(",")
+              if is_nulled(___):
+                  print(name)
+        hints:
+          - &boss3b_h1 "Write a function that answers 'is this card nulled?', then print the name from every card where the answer is yes."
+          - "== compares two values and gives True or False, so the function can return the comparison directly. Call it with the status from each line."
+          - "Blanks, in order: ==   status"
+        solution: |
+          def is_nulled(status):
+              return status == "nulled"
+
+          for line in open("census.csv"):
+              name, village, status = line.strip().split(",")
+              if is_nulled(status):
+                  print(name)
+        source_checks:
+          - pattern: '\bdef\s+is_nulled\s*\('
+            message: "The output is right, but the Terminal wants to see a function called is_nulled do the judging."
+      bash:
+        starter: |
+          # is_nulled succeeds (exit status 0) when its first argument is "nulled".
+          is_nulled() {
+            [ "$1" ___ "nulled" ]
+          }
+
+          while IFS=, read -r name village status; do
+            if is_nulled "$___"; then
+              echo "$name"
+            fi
+          done < census.csv
+        hints:
+          - *boss3b_h1
+          - "Inside the function, $1 is the status you passed in. [ \"$1\" = \"nulled\" ] succeeds when they match, and an if can use a function's success directly."
+          - "Blanks, in order: =   status"
+        solution: |
+          is_nulled() {
+            [ "$1" = "nulled" ]
+          }
+
+          while IFS=, read -r name village status; do
+            if is_nulled "$status"; then
+              echo "$name"
+            fi
+          done < census.csv
+        source_checks:
+          - pattern: '^\s*(function\s+is_nulled\b|is_nulled\s*\(\s*\))'
+            message: "The output is right, but the Terminal wants to see a function called is_nulled do the judging."
+      powershell:
+        starter: |
+          # IsNulled($status) is $true when the status is "nulled".
+          function IsNulled($status) {
+            return $status ___ "nulled"
+          }
+
+          foreach ($line in Get-Content census.csv) {
+            $parts = $line.Split(',')
+            if (IsNulled $parts[___]) {
+              Write-Output $parts[0]
+            }
+          }
+        hints:
+          - *boss3b_h1
+          - "-eq compares two values and gives $true or $false. After Split(','), the fields are $parts[0] (name), $parts[1] (village) and $parts[2] (status)."
+          - "Blanks, in order: -eq   2"
+        solution: |
+          function IsNulled($status) {
+            return $status -eq "nulled"
+          }
+
+          foreach ($line in Get-Content census.csv) {
+            $parts = $line.Split(',')
+            if (IsNulled $parts[2]) {
+              Write-Output $parts[0]
+            }
+          }
+        source_checks:
+          - pattern: '(?im)^\s*function\s+isnulled\b'
+            message: "The output is right, but the Terminal wants to see a function called IsNulled do the judging."
+    tests:
+      - name: "The nulled names, in card order"
+        expect: {stdout: "Pell\nMara\nSera\nHobb\nAlder\nOdo\n", exit_code: 0}
+  - title: "Lectern C: The Village Tally"
+    lore: |
+      The Archivist wants to know which villages are hurting most. Tally the
+      nulled cards per village, a dictionary of village to count, and print one
+      line per village in alphabetical order, as 'Village: count'. Villages
+      with no nulled souls stay off the list.
+    fixtures: *census
+    languages:
+      python:
+        starter: |
+          def is_nulled(status):
+              return status == "nulled"
+
+          counts = {}
+          for line in open("census.csv"):
+              name, village, status = line.strip().split(",")
+              if is_nulled(status):
+                  counts[village] = counts.get(village, 0) + ___
+          for village in ___(counts):
+              print(village + ": " + str(counts[village]))
+        hints:
+          - &boss3c_h1 "Keep a dictionary that maps each village to its number of nulled cards, then print the villages alphabetically as 'Village: count'."
+          - "counts.get(village, 0) gives the count so far (0 for a new village), so add 1 and store it back. sorted(counts) lists the villages in order."
+          - "Blanks, in order: 1   sorted"
+        solution: |
+          def is_nulled(status):
+              return status == "nulled"
+
+          counts = {}
+          for line in open("census.csv"):
+              name, village, status = line.strip().split(",")
+              if is_nulled(status):
+                  counts[village] = counts.get(village, 0) + 1
+          for village in sorted(counts):
+              print(village + ": " + str(counts[village]))
+        source_checks:
+          - pattern: '\bcounts\s*=\s*\{\}'
+            message: "The Terminal wants to see a dictionary (counts = {}) doing the tallying."
+      bash:
+        starter: |
+          # bash 3.2 has no dictionaries, so let sort and uniq do the tallying.
+          is_nulled() {
+            [ "$1" = "nulled" ]
+          }
+
+          while IFS=, read -r name village status; do
+            if is_nulled "$status"; then
+              echo "$village"
+            fi
+          done < census.csv | sort | uniq ___ | while read -r n v; do
+            echo "$v: $___"
+          done
+        hints:
+          - *boss3c_h1
+          - "Print the village of each nulled card, sort so equal villages sit together, and uniq -c counts each run (count first, then the village). The last loop swaps them into 'Village: count'."
+          - "Blanks, in order: -c   n"
+        solution: |
+          is_nulled() {
+            [ "$1" = "nulled" ]
+          }
+
+          while IFS=, read -r name village status; do
+            if is_nulled "$status"; then
+              echo "$village"
+            fi
+          done < census.csv | sort | uniq -c | while read -r n v; do
+            echo "$v: $n"
+          done
+      powershell:
+        starter: |
+          function IsNulled($status) {
+            return $status -eq "nulled"
+          }
+
+          $counts = @{}
+          foreach ($line in Get-Content census.csv) {
+            $parts = $line.Split(',')
+            if (IsNulled $parts[2]) {
+              $counts[$parts[1]] = 1 + [int]$counts[$parts[___]]
+            }
+          }
+          foreach ($v in ($counts.Keys | ___-Object)) {
+            Write-Output "${v}: $($counts[$v])"
+          }
+        hints:
+          - *boss3c_h1
+          - "A hashtable maps village to count. A missing key reads as nothing, [int] turns that into 0, so 1 + [int]$counts[$key] bumps the count. $counts.Keys lists the villages and Sort-Object orders them."
+          - "Blanks, in order: 1   Sort"
+        solution: |
+          function IsNulled($status) {
+            return $status -eq "nulled"
+          }
+
+          $counts = @{}
+          foreach ($line in Get-Content census.csv) {
+            $parts = $line.Split(',')
+            if (IsNulled $parts[2]) {
+              $counts[$parts[1]] = 1 + [int]$counts[$parts[1]]
+            }
+          }
+          foreach ($v in ($counts.Keys | Sort-Object)) {
+            Write-Output "${v}: $($counts[$v])"
+          }
+    tests:
+      - name: "Nulled souls per village"
+        expect:
+          stdout: "Branchwood: 2\nCrossroads: 1\nEcho Vale: 1\nLittle Tilde: 1\nMurmurby: 1\n"
+          exit_code: 0
+  - title: "Lectern D: The New Register"
+    lore: |
+      Now give the names back. Write restored.txt: every nulled name, sorted,
+      one per line. That file becomes the Directory's new register, so the
+      Terminal will read it. When it is written, announce how many names you
+      restored. Whoever is on that list will remember you did this.
+    fixtures: *census
+    languages:
+      python:
+        starter: |
+          def is_nulled(status):
+              return status == "nulled"
+
+          names = []
+          for line in open("census.csv"):
+              name, village, status = line.strip().split(",")
+              if is_nulled(status):
+                  names.append(name)
+          names.___()
+          with open("restored.txt", "w") as f:
+              for name in names:
+                  f.write(name + "___")
+          print("Restored", len(names), "names.")
+        hints:
+          - &boss3d_h1 "Collect the nulled names, sort them, write them to restored.txt one per line, then print 'Restored N names.' with the real count."
+          - "A list can sort itself in place with .sort(). Writing to a file does not add line breaks for you, so end each name with \\n."
+          - "Blanks, in order: sort   \\n"
+        solution: |
+          def is_nulled(status):
+              return status == "nulled"
+
+          names = []
+          for line in open("census.csv"):
+              name, village, status = line.strip().split(",")
+              if is_nulled(status):
+                  names.append(name)
+          names.sort()
+          with open("restored.txt", "w") as f:
+              for name in names:
+                  f.write(name + "\n")
+          print("Restored", len(names), "names.")
+      bash:
+        starter: |
+          is_nulled() {
+            [ "$1" = "nulled" ]
+          }
+
+          while IFS=, read -r name village status; do
+            if is_nulled "$status"; then
+              echo "$name"
+            fi
+          done < census.csv | ___ > restored.txt
+
+          count=$(wc -l < restored.txt)
+          echo "Restored $((count)) names."
+        hints:
+          - *boss3d_h1
+          - "Print each nulled name, then pipe the whole loop through sort before redirecting into restored.txt with >. Afterwards wc -l < restored.txt counts the lines."
+          - "Blank: sort"
+        solution: |
+          is_nulled() {
+            [ "$1" = "nulled" ]
+          }
+
+          while IFS=, read -r name village status; do
+            if is_nulled "$status"; then
+              echo "$name"
+            fi
+          done < census.csv | sort > restored.txt
+
+          count=$(wc -l < restored.txt)
+          echo "Restored $((count)) names."
+      powershell:
+        starter: |
+          function IsNulled($status) {
+            return $status -eq "nulled"
+          }
+
+          $names = @()
+          foreach ($line in Get-Content census.csv) {
+            $parts = $line.Split(',')
+            if (IsNulled $parts[2]) {
+              $names += $parts[0]
+            }
+          }
+          $sorted = $names | ___-Object
+          Set-Content restored.txt $sorted -Encoding utf8
+          Write-Output "Restored $($names.___) names."
+        hints:
+          - *boss3d_h1
+          - "Collect the names in an array with +=, sort them with Sort-Object, and write them with Set-Content (one array item per line). An array knows its own size with .Count."
+          - "Blanks, in order: Sort   Count"
+        solution: |
+          function IsNulled($status) {
+            return $status -eq "nulled"
+          }
+
+          $names = @()
+          foreach ($line in Get-Content census.csv) {
+            $parts = $line.Split(',')
+            if (IsNulled $parts[2]) {
+              $names += $parts[0]
+            }
+          }
+          $sorted = $names | Sort-Object
+          Set-Content restored.txt $sorted -Encoding utf8
+          Write-Output "Restored $($names.Count) names."
+    tests:
+      - name: "The register is written and announced"
+        expect:
+          stdout: "Restored 6 names.\n"
+          exit_code: 0
+          files:
+            - path: restored.txt
+              content: "Alder\nHobb\nMara\nOdo\nPell\nSera\n"
+reward:
+  xp: 180
+  items: [register_of_names]
+  unlocks: ["vim:marks"]
+  world_effect: "restored.txt becomes the Directory's new register, and the Archivist collapses into index cards. At the waystone, Pell, whose name the player's code just wrote, regains colour and says: You wrote me back."

@@ -1,0 +1,106 @@
+id: ch3-04
+title: The Toll Function
+chapter: 3
+order: 4
+optional: true
+concepts: [functions, return-values, multiple-parameters, composition]
+vim_skill: "ma and 'a (set a mark, fly back to it)"
+lore: |
+  The Reading Room charges a toll, and the clerk refuses to do sums twice.
+  Every cart costs 7 coins, and a heavy cart costs 10 more, once, on top.
+  Write the toll as a function that returns the price, then let it do the
+  arithmetic for the three carts waiting outside: 3 carts heavy, 1 cart light,
+  2 carts heavy. Print the grand total.
+limits: {timeout_s: 2, max_stdout_kb: 16}
+languages:
+  python:
+    starter: |
+      def toll(carts, heavy):
+          cost = ___ * carts
+          if heavy:
+              cost = cost + ___
+          return cost
+
+      print(toll(3, True) + toll(1, False) + toll(2, True))
+    hints:
+      - &toll4_h1 "toll(carts, heavy) is 7 coins per cart, plus a flat 10 if the load is heavy. Call it three times and add the results together."
+      - "Start from the price per cart times the number of carts, then add the heavy fee only when heavy is true. A function hands its answer back with return, and calls can be added like numbers."
+      - "Blanks, in order: 7   10"
+    solution: |
+      def toll(carts, heavy):
+          cost = 7 * carts
+          if heavy:
+              cost = cost + 10
+          return cost
+
+      print(toll(3, True) + toll(1, False) + toll(2, True))
+    source_checks:
+      - pattern: '\bdef\s+toll\s*\('
+        message: "The Terminal wants to see the toll defined as a function: def toll(carts, heavy):."
+  bash:
+    starter: |
+      # A bash function "returns" a value by printing it, and the caller catches it with $( ).
+      toll() {
+        local cost=$(( ___ * $1 ))
+        if [ "$2" = "yes" ]; then
+          cost=$(( cost + ___ ))
+        fi
+        echo "$cost"
+      }
+
+      total=$(( $(toll 3 yes) + $(toll 1 no) + $(toll 2 yes) ))
+      echo "$total"
+    hints:
+      - *toll4_h1
+      - "$1 is the cart count and $2 is yes or no. The function echoes its answer, and $(toll 3 yes) captures that echo so $(( )) can add the three results."
+      - "Blanks, in order: 7   10"
+    solution: |
+      toll() {
+        local cost=$(( 7 * $1 ))
+        if [ "$2" = "yes" ]; then
+          cost=$(( cost + 10 ))
+        fi
+        echo "$cost"
+      }
+
+      total=$(( $(toll 3 yes) + $(toll 1 no) + $(toll 2 yes) ))
+      echo "$total"
+    source_checks:
+      - pattern: '^\s*(function\s+toll\b|toll\s*\(\s*\))'
+        message: "The Terminal wants to see the toll defined as a function: toll() { ... }."
+  powershell:
+    starter: |
+      function Toll($carts, $heavy) {
+        $cost = ___ * $carts
+        if ($heavy) {
+          $cost = $cost + ___
+        }
+        return $cost
+      }
+
+      Write-Output ((Toll 3 $true) + (Toll 1 $false) + (Toll 2 $true))
+    hints:
+      - *toll4_h1
+      - "Multiply the price per cart by the number of carts, then add the heavy fee only if $heavy is true. Wrap each call in brackets so the three results can be added."
+      - "Blanks, in order: 7   10"
+    solution: |
+      function Toll($carts, $heavy) {
+        $cost = 7 * $carts
+        if ($heavy) {
+          $cost = $cost + 10
+        }
+        return $cost
+      }
+
+      Write-Output ((Toll 3 $true) + (Toll 1 $false) + (Toll 2 $true))
+    source_checks:
+      - pattern: '(?im)^\s*function\s+toll\b'
+        message: "The Terminal wants to see the toll defined as a function: function Toll($carts, $heavy) { ... }."
+tests:
+  - name: "Three loads, one grand total"
+    expect: {stdout: "62\n", exit_code: 0}
+reward:
+  xp: 40
+  items: [clerks_abacus]
+  unlocks: ["vim:ma", "vim:'a"]
+  world_effect: "The clerk sighs, stamps the ledger once, and waves the carts through."

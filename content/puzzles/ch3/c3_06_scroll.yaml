@@ -1,0 +1,90 @@
+id: ch3-06
+title: The Singed Scroll
+chapter: 3
+order: 6
+optional: false
+concepts: [files, reading-files, searching, line-counting]
+vim_skill: "/ inside the editor (search the buffer for a word)"
+lore: |
+  A scroll survived the fire, scorched at the edges and slightly sulky. Dex
+  needs two facts from it: how many lines it holds, and which line the Null
+  has been at. Open scroll.txt, print the number of lines, then print the one
+  line that mentions the Null. "Read it twice," Pell would say. Once to count,
+  once to search.
+fixtures:
+  - path: scroll.txt
+    content: |
+      The Grand Directory keeps three halls.
+      The first hall holds every map ever drawn.
+      The second hall holds every name ever spoken.
+      Here the Null gnawed the ink away.
+      The third hall holds the doors between halls.
+      Nothing in the stacks may be shelved twice.
+      Visitors must leave their pencils at the gate.
+      Dex asks that nobody ask about the pencil.
+limits: {timeout_s: 2, max_stdout_kb: 16}
+languages:
+  python:
+    starter: |
+      # Read scroll.txt, print how many lines it has, then the line that mentions Null.
+      with open("scroll.txt") as f:
+          lines = f.readlines()
+      print(___(lines))
+      for line in lines:
+          if "___" in line:
+              print(line.strip())
+    hints:
+      - &scroll_h1 "Print the number of lines in scroll.txt first, then print the single line that contains the word Null."
+      - "readlines() gives a list with one entry per line, and len() counts a list. Inside the loop, 'word in line' is True when the line contains the word."
+      - "Blanks, in order: len   Null"
+    solution: |
+      with open("scroll.txt") as f:
+          lines = f.readlines()
+      print(len(lines))
+      for line in lines:
+          if "Null" in line:
+              print(line.strip())
+  bash:
+    starter: |
+      # wc -l counts lines. grep prints the lines that contain a word.
+      wc -l < scroll.txt
+      grep "___" ___
+    hints:
+      - *scroll_h1
+      - "wc -l counts newlines (feeding the file in with < keeps the filename out of the answer). grep takes the word to find, then the file to look in."
+      - "Blanks, in order: Null   scroll.txt"
+    solution: |
+      wc -l < scroll.txt
+      grep "Null" scroll.txt
+  powershell:
+    starter: |
+      # Get-Content reads a file as a list of lines.
+      $lines = Get-Content scroll.txt
+      Write-Output $lines.___
+      foreach ($line in $lines) {
+        if ($line -clike "*___*") {
+          Write-Output $line
+        }
+      }
+    hints:
+      - *scroll_h1
+      - "Get-Content gives one entry per line, and a list knows how many entries it holds with .Count. In -clike, the * stars mean 'anything', so *word* matches any line containing the word."
+      - "Blanks, in order: Count   Null"
+    solution: |
+      $lines = Get-Content scroll.txt
+      Write-Output $lines.Count
+      foreach ($line in $lines) {
+        if ($line -clike "*Null*") {
+          Write-Output $line
+        }
+      }
+tests:
+  - name: "Eight lines, one gnawed"
+    expect:
+      stdout_regex: '\A\s*8\s*\nHere the Null gnawed the ink away\.\s*\Z'
+      exit_code: 0
+reward:
+  xp: 55
+  items: [singed_scroll]
+  unlocks: []
+  world_effect: "The scroll uncurls and glows faintly, and the gnawed line seals itself with a neat stamp."

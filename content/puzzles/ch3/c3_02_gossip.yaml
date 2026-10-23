@@ -1,0 +1,92 @@
+id: ch3-02
+title: The Gossip Gallery
+chapter: 3
+order: 2
+optional: false
+concepts: [dictionaries, counting, sorting, stdin]
+vim_skill: "/ (search the whole buffer)"
+lore: |
+  The Gossip Gallery is a wall of shouting words, and the Null hides in the
+  loudest ones. Dex wants a tally of every word that is shouted: one line per
+  word, the word and then how many times it was heard, in alphabetical order.
+  "Dictionaries," he whispers. "Word: count. Word: count. Don't make me say it
+  twice. Everyone else does."
+limits: {timeout_s: 2, max_stdout_kb: 16}
+languages:
+  python:
+    starter: |
+      import sys
+
+      # Count every word from stdin, then print "word count" in alphabetical order.
+      counts = {}
+      for word in sys.stdin.read().___():
+          counts[word] = counts.get(word, 0) + ___
+      for word in ___(counts):
+          print(word, counts[word])
+    hints:
+      - &gossip_h1 "Count how many times each word appears, then print one line per word as 'word count', alphabetically. A dictionary from word to count is the natural tool."
+      - "split() with no argument chops text into words. counts.get(word, 0) gives the count so far (or 0 if the word is new), and sorted(counts) lists the keys alphabetically."
+      - "Blanks, in order: split   1   sorted"
+    solution: |
+      import sys
+
+      counts = {}
+      for word in sys.stdin.read().split():
+          counts[word] = counts.get(word, 0) + 1
+      for word in sorted(counts):
+          print(word, counts[word])
+  bash:
+    starter: |
+      # Words to lines, drop blanks, sort, count neighbours, then flip each line.
+      tr -s ' ' '\n' | grep -v '^$' | sort | uniq ___ | while read -r n w; do
+        echo "$w ___"
+      done
+    hints:
+      - *gossip_h1
+      - "tr -s ' ' '\\n' puts one word per line. After sort, identical words sit together, so uniq -c can count them, but it prints the count first. The while read loop swaps them around."
+      - "Blanks, in order: -c   $n"
+    solution: |
+      tr -s ' ' '\n' | grep -v '^$' | sort | uniq -c | while read -r n w; do
+        echo "$w $n"
+      done
+  powershell:
+    starter: |
+      # Count every word from stdin, then print "word count" in alphabetical order.
+      $counts = @{}
+      while ($null -ne ($line = [Console]::In.ReadLine())) {
+        foreach ($w in $line.Split(' ', [StringSplitOptions]::RemoveEmptyEntries)) {
+          $counts[$w] = ___ + [int]$counts[$w]
+        }
+      }
+      foreach ($k in ($counts.Keys | ___-Object)) {
+        Write-Output "$k $($counts[$k])"
+      }
+    hints:
+      - *gossip_h1
+      - "A missing key reads as nothing, and [int] turns that into 0, so 1 + [int]$counts[$w] bumps the count. $counts.Keys lists the words, and Sort-Object puts them in order."
+      - "Blanks, in order: 1   Sort"
+    solution: |
+      $counts = @{}
+      while ($null -ne ($line = [Console]::In.ReadLine())) {
+        foreach ($w in $line.Split(' ', [StringSplitOptions]::RemoveEmptyEntries)) {
+          $counts[$w] = 1 + [int]$counts[$w]
+        }
+      }
+      foreach ($k in ($counts.Keys | Sort-Object)) {
+        Write-Output "$k $($counts[$k])"
+      }
+tests:
+  - name: "Three nulls and a rumour"
+    stdin: "null null rumour\nnull wren\n"
+    expect: {stdout: "null 3\nrumour 1\nwren 1\n", exit_code: 0}
+  - name: "One word, shouted"
+    stdin: "echo echo echo echo\n"
+    expect: {stdout: "echo 4\n"}
+  - name: "Alphabetical, not first-heard"
+    stdin: "zeta alpha mu\nalpha zeta\nmu alpha\n"
+    expect: {stdout: "alpha 3\nmu 2\nzeta 2\n"}
+reward:
+  xp: 60
+  items: [gossip_tally]
+  unlocks: ["vim:/"]
+  world_effect: "The shouting words settle into neat columns on the gallery wall, and the Null mites hiding in them blink out."

@@ -1,0 +1,81 @@
+id: ch3-01
+title: Dex's Half-Blank Inventory
+chapter: 3
+order: 1
+optional: false
+concepts: [dictionaries, key-value, associative-arrays]
+vim_skill: "yy and p (yank a line, put it back down)"
+lore: |
+  Dex, Archivist of the Grand Directory, has catalogued 40,000 books and lost
+  one pencil, and now the Null has eaten half the inventory. "Potion: three.
+  Rope: one. Lantern: missing. Key: value, key: value," he gabbles, which is
+  how he talks when he is stressed. Build the inventory as a dictionary, read
+  one entry back, add the lantern, and count how many kinds of thing Dex owns.
+requires: {bash: ">=4"}
+limits: {timeout_s: 2, max_stdout_kb: 16}
+languages:
+  python:
+    starter: |
+      # A dictionary pairs each key with a value: {"key": value}
+      inv = {"potion": 3, "rope": 1}
+      print(inv["___"])
+      inv["lantern"] = ___
+      print(___(inv))
+    hints:
+      - &inv_h1 "Build the inventory (potion 3, rope 1), print the potion count, add a lantern worth 2, then print how many keys the inventory has now. Two numbers come out: 3, then 3."
+      - "Look an entry up by its key in square brackets, and add one by assigning to a new key. A dictionary knows its own size, and len() will tell you how many keys it holds."
+      - "Blanks, in order: potion   2   len"
+    solution: |
+      inv = {"potion": 3, "rope": 1}
+      print(inv["potion"])
+      inv["lantern"] = 2
+      print(len(inv))
+    source_checks:
+      - pattern: '\binv\s*=\s*\{'
+        message: "The Terminal wants to see the inventory built as a dictionary: inv = {...}."
+  bash:
+    starter: |
+      # An associative array pairs each key with a value. It needs bash 4 or newer.
+      declare -A inv=([potion]=3 [rope]=1)
+      echo "${inv[___]}"
+      inv[lantern]=___
+      echo "${#inv[___]}"
+    hints:
+      - *inv_h1
+      - "declare -A makes an associative array. Read an entry with ${inv[key]}, add one with inv[key]=value, and count the keys with ${#inv[@]}."
+      - "Blanks, in order: potion   2   @"
+    solution: |
+      declare -A inv=([potion]=3 [rope]=1)
+      echo "${inv[potion]}"
+      inv[lantern]=2
+      echo "${#inv[@]}"
+    source_checks:
+      - pattern: 'declare\s+-A\s+inv'
+        message: "The Terminal wants to see the inventory built as an associative array: declare -A inv."
+  powershell:
+    starter: |
+      # A hashtable pairs each key with a value: @{ key = value }
+      $inv = @{ potion = 3; rope = 1 }
+      Write-Output $inv["___"]
+      $inv["lantern"] = ___
+      Write-Output $inv.___
+    hints:
+      - *inv_h1
+      - "Look an entry up with $inv[\"key\"], add one by assigning to a new key, and ask the hashtable for its .Count to see how many keys it holds."
+      - "Blanks, in order: potion   2   Count"
+    solution: |
+      $inv = @{ potion = 3; rope = 1 }
+      Write-Output $inv["potion"]
+      $inv["lantern"] = 2
+      Write-Output $inv.Count
+    source_checks:
+      - pattern: '\$inv\s*=\s*@\{'
+        message: "The Terminal wants to see the inventory built as a hashtable: $inv = @{ ... }."
+tests:
+  - name: "Potions, then the kinds of thing Dex owns"
+    expect: {stdout: "3\n3\n", exit_code: 0}
+reward:
+  xp: 40
+  items: [dex_pencil_stub]
+  unlocks: ["vim:yy", "vim:p"]
+  world_effect: "Dex's inventory board fills in, and he can finally yank a bookshelf and put it down again."

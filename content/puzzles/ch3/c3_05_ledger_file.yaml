@@ -1,0 +1,71 @@
+id: ch3-05
+title: Dex's New Ledger
+chapter: 3
+order: 5
+optional: false
+concepts: [files, writing-files, redirection]
+vim_skill: ":w (write the buffer, versus writing a file from code)"
+lore: |
+  The old ledger went up with the fire, and Dex is doing his best impression
+  of someone who is not panicking. Start a fresh one. Your spell must create a
+  file called ledger.txt holding exactly three lines: the lamp oil, the rope,
+  and the one pencil he has left. "It must survive after the spell ends,"
+  Dex insists. "Anything you only say out loud, the Null can swallow."
+limits: {timeout_s: 2, max_stdout_kb: 16}
+languages:
+  python:
+    starter: |
+      # open(name, "w") creates a file for writing. Each write adds text to it.
+      with open("ledger.txt", "___") as f:
+          f.write("oil: 4\n")
+          f.write("rope: 1\n")
+          f.write(___)
+    hints:
+      - &ledger_h1 "Create a file named ledger.txt with three lines: 'oil: 4', 'rope: 1' and 'pencil: 1'. Nothing needs to be printed to the screen; the file is the point."
+      - "Open the file in write mode so it is created, then write each line with its own \\n at the end, or the lines will run together into one."
+      - "Blanks, in order: w   \"pencil: 1\\n\""
+    solution: |
+      with open("ledger.txt", "w") as f:
+          f.write("oil: 4\n")
+          f.write("rope: 1\n")
+          f.write("pencil: 1\n")
+  bash:
+    starter: |
+      # > creates (or overwrites) a file, and >> adds to the end of it.
+      echo "oil: 4" ___ ledger.txt
+      echo "rope: 1" >> ledger.txt
+      echo "pencil: 1" ___ ledger.txt
+    hints:
+      - *ledger_h1
+      - "The first line uses > to start the file fresh. Every line after it must use >> to add to the end, or it will overwrite everything before it."
+      - "Blanks, in order: >   >>"
+    solution: |
+      echo "oil: 4" > ledger.txt
+      echo "rope: 1" >> ledger.txt
+      echo "pencil: 1" >> ledger.txt
+  powershell:
+    starter: |
+      # Set-Content writes a file fresh, and Add-Content adds to the end of it.
+      Set-Content ledger.txt "oil: 4" -Encoding utf8
+      Add-Content ledger.txt "rope: 1" -Encoding utf8
+      ___-Content ledger.txt "pencil: 1" -Encoding utf8
+    hints:
+      - *ledger_h1
+      - "Set-Content starts the file fresh with its first line. Every line after it needs the cmdlet that adds to the end instead, or it would overwrite what is already there."
+      - "Blank: Add"
+    solution: |
+      Set-Content ledger.txt "oil: 4" -Encoding utf8
+      Add-Content ledger.txt "rope: 1" -Encoding utf8
+      Add-Content ledger.txt "pencil: 1" -Encoding utf8
+tests:
+  - name: "The ledger exists and holds three lines"
+    expect:
+      exit_code: 0
+      files:
+        - path: ledger.txt
+          content: "oil: 4\nrope: 1\npencil: 1\n"
+reward:
+  xp: 50
+  items: [new_ledger]
+  unlocks: ["vim:w"]
+  world_effect: "The new ledger appears on Dex's desk, still smelling faintly of fresh ink, and he starts to relax."
