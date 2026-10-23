@@ -5,6 +5,8 @@ area: Hall of Echoes
 chapter: 1
 enter_flag: entered:echo_vale
 boss: grubble
+intro_dialogue: grubble
+defeat_dialogue: grubble
 tilesets: dungeon
 legend:
   # ground=dungeon:48 wall=dungeon:40,40,40,57,58,59

@@ -383,6 +383,11 @@
    "value": 3
   },
   {
+   "name": "defeat_dialogue",
+   "type": "string",
+   "value": "hollow_archivist"
+  },
+  {
    "name": "enter_flag",
    "type": "string",
    "value": "entered:grand_directory"

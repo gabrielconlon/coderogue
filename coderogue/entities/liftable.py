@@ -29,6 +29,8 @@ class Liftable(Entity):
         properties: dict[str, Any] | None = None,
     ) -> None:
         super().__init__(x, y, 16, 16, sprite, name=name, properties=properties)
+        #: Stable id within its map (object name, else ``#<object id>``) for persistence.
+        self.key: str = name
 
     def tile(self, tile_size: int) -> tuple[int, int]:
         """The tile the object's centre is on."""

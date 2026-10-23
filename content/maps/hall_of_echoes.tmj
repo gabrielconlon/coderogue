@@ -275,9 +275,19 @@
    "value": 1
   },
   {
+   "name": "defeat_dialogue",
+   "type": "string",
+   "value": "grubble"
+  },
+  {
    "name": "enter_flag",
    "type": "string",
    "value": "entered:echo_vale"
+  },
+  {
+   "name": "intro_dialogue",
+   "type": "string",
+   "value": "grubble"
   }
  ],
  "renderorder": "right-down",

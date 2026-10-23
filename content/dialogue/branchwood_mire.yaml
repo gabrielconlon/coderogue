@@ -194,6 +194,8 @@ ouroboros_defeated:
 ouroboros:
   npc: ouroboros
   speaker: Ouroboros
+  once: true
+  unless: ["solved:ch2-b"]
   lines:
     - "(A ring of scales as wide as the causeway, one end eating the other.)"
     - "(Every lap it regrows. It is not angry. It is simply... still going.)"

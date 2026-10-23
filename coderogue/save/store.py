@@ -4,6 +4,7 @@ Layout (``root`` is the per-user data dir, see :func:`default_root`)::
 
     root/profiles/<slot>/save.json            # SaveState minus the drafts
     root/profiles/<slot>/spells/<id>.<ext>    # one file per puzzle per language
+                                              # (boss phases: <id>__<phase>.<ext>)
     root/profiles/<slot>/.git                 # the Ledger (if git is available)
 
 Keeping drafts as real files makes ``git diff`` show the player's code, line by line.
@@ -38,6 +39,8 @@ SPELLS_DIR = "spells"
 DEFAULT_SLOT = "slot1"
 #: Language id -> spell file extension.
 LANG_EXT: dict[str, str] = {"python": "py", "bash": "sh", "powershell": "ps1"}
+#: A boss phase draft is keyed ``<puzzle_id>#<phase>``; on disk the ``#`` becomes this.
+PHASE_FILE_SEP = "__"
 _SLOT_RE = re.compile(r"^[A-Za-z0-9_-]{1,32}$")
 
 
@@ -304,8 +307,8 @@ class SaveStore:
     # ---- spells -----------------------------------------------------------------------
     @staticmethod
     def spell_name(puzzle_id: str, language: str) -> str:
-        """File name of a draft, e.g. ``ch0-01.py``."""
-        safe = re.sub(r"[^A-Za-z0-9_.-]", "_", puzzle_id)
+        """File name of a draft, e.g. ``ch0-01.py`` (boss phase ``ch1-b#1`` -> ``ch1-b__1.py``)."""
+        safe = re.sub(r"[^A-Za-z0-9_.-]", "_", puzzle_id.replace("#", PHASE_FILE_SEP))
         return f"{safe}.{lang_ext(language)}"
 
     def spell_path(self, slot: str, puzzle_id: str, language: str) -> Path:
@@ -326,6 +329,7 @@ class SaveStore:
             if not path.is_file() or path.name.startswith(".") or "." not in path.name:
                 continue
             pid, _, ext = path.name.rpartition(".")
+            pid = pid.replace(PHASE_FILE_SEP, "#")
             try:
                 source = path.read_text(encoding="utf-8")
             except (OSError, UnicodeDecodeError):

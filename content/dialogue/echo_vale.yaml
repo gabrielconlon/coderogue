@@ -326,6 +326,7 @@ grubble_intro:
   speaker: "Grubble, the Typo King"
   once: true
   requires: ["entered:echo_vale"]
+  unless: ["solved:ch1-b"]
   sets: [grubble_declared]
   lines:
     - "BEHOLD! I, GRUBBLE, KING OF TYPOS, RULER OF ALL THAT IS MISSPELT!"

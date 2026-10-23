@@ -6,6 +6,8 @@ area: The Mire's Heart
 chapter: 2
 enter_flag: entered:looping_mire
 boss: ouroboros
+intro_dialogue: ouroboros
+defeat_dialogue: ouroboros
 tilesets: dungeon
 legend:
   # ground=dungeon:48 wall=dungeon:40,40,40,57,58,59

@@ -327,9 +327,19 @@
    "value": 2
   },
   {
+   "name": "defeat_dialogue",
+   "type": "string",
+   "value": "ouroboros"
+  },
+  {
    "name": "enter_flag",
    "type": "string",
    "value": "entered:looping_mire"
+  },
+  {
+   "name": "intro_dialogue",
+   "type": "string",
+   "value": "ouroboros"
   }
  ],
  "renderorder": "right-down",

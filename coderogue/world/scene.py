@@ -20,7 +20,7 @@ from coderogue.entities.altar import Altar
 from coderogue.entities.base import Entity, StaticProp
 from coderogue.entities.boss import Boss
 from coderogue.entities.door import Door
-from coderogue.entities.enemies import Enemy, spawn_enemy
+from coderogue.entities.enemies import Enemy, StampGolem, spawn_enemy
 from coderogue.entities.items import Chest, Pickup
 from coderogue.entities.liftable import Liftable, Plate
 from coderogue.entities.npc import Npc
@@ -28,9 +28,9 @@ from coderogue.entities.player import HURT_IFRAMES, Player
 from coderogue.entities.waystone import WAYSTONE_TILE, Waystone, WaystoneMenu
 from coderogue.input.keymap import MOVE_ACTIONS, Action, Keymap
 from coderogue.input.modes import Mode, ModeMachine
-from coderogue.save.store import PlayerState, SaveState
+from coderogue.save.store import PlayerState, SaveReceipt, SaveState
 from coderogue.scene import Scene
-from coderogue.story.dialogue import DialogueBank
+from coderogue.story.dialogue import Dialogue, DialogueBank
 from coderogue.story.scene import DialogueScene
 from coderogue.ui.hud import draw_hud
 from coderogue.ui.text import draw_text, render_text
@@ -183,6 +183,10 @@ class WorldScene(Scene):
         self.pending_key: str | None = None  # "m" / "'" waiting for a letter
         self._pending_op: tuple[str, float] | None = None  # ("d" | "y", time)
         self._alias_cache: dict[str, str | None] = {}
+        # crates put down, per map: {map_key: {crate_key: [tile_x, tile_y]}} (saved in extras)
+        self.crates: dict[str, dict[str, list[int]]] = {}
+        # map-triggered dialogue (boss intro/defeat), pushed once the world is on top
+        self.queued_dialogue: list[Dialogue] = []
         self.load_map(map_path, spawn)
 
     # ---- maps -------------------------------------------------------------------------
@@ -201,6 +205,10 @@ class WorldScene(Scene):
         """Load ``target`` (map stem or path) in place and put the hero at the
         ``player_spawn`` named ``spawn`` (or at the waystone named ``waystone``)."""
         path = resolve_map(target)
+        carried = self.player.carrying
+        if isinstance(carried, Liftable) and hasattr(self, "map_path"):
+            # a crate carried out of a map goes home to its origin there
+            self.crates.get(self.map_key, {}).pop(carried.key, None)
         self.map_path = path
         self.tilemap = TileMap.load(path)
         self.collision = self.tilemap.collision
@@ -231,12 +239,18 @@ class WorldScene(Scene):
             self.modes.escape()
         self.clear_search()
         self._populate()
+        self._apply_crates()
         self._place_player(spawn, waystone)
         props = self.tilemap.data.properties
         self.area_name = str(props.get("area") or props.get("name") or path.stem)
         enter_flag = props.get("enter_flag")
         if enter_flag:
             self._progress().flags.add(str(enter_flag))
+        self.dismiss_golems()
+        self.queued_dialogue.clear()
+        intro = props.get("intro_dialogue")
+        if intro:
+            self.queue_dialogue(str(intro))
         self._update_world_state()
         self.camera.follow(*self.player.center)
         self._sync_altars()
@@ -317,6 +331,7 @@ class WorldScene(Scene):
             elif kind == "liftable":
                 lift = Liftable(obj.x, obj.y, _sprite_for(obj, LIFTABLE_TILE),
                                 name=obj.name, properties=obj.properties)
+                lift.key = obj.name or f"#{obj.id}"
                 lift.place_on_tile(*lift.tile(self.tilemap.tile_size), self.tilemap.tile_size)
                 self.liftables.append(lift)
             elif kind == "plate":
@@ -643,6 +658,12 @@ class WorldScene(Scene):
         self.player.coins += int(getattr(enemy, "coins", 0) or 0)
         if self.locked_target is enemy:
             self._check_lock()
+        if isinstance(enemy, Boss):
+            # The boss falls after its last phase: on_puzzle_solved already set
+            # ``solved:<id>``, so the defeat lines (``requires: [solved:<id>]``) pick here.
+            defeat = self.tilemap.data.properties.get("defeat_dialogue")
+            if defeat:
+                self.queue_dialogue(str(defeat))
 
     def spawn_enemy_instance(self, enemy: Enemy) -> None:
         """Add an enemy created during the step (a Leak splitting, a boss summon)."""
@@ -738,8 +759,19 @@ class WorldScene(Scene):
         carried.place_on_tile(tx, ty, self.tilemap.tile_size)
         self.liftables.append(carried)
         self.player.carrying = None
+        if carried.key:
+            self.crates.setdefault(self.map_key, {})[carried.key] = [tx, ty]
         self._update_world_state()
         return True
+
+    def _apply_crates(self) -> None:
+        """Move this map's crates to where they were last put down (see :attr:`crates`)."""
+        placed = self.crates.get(self.map_key, {})
+        ts = self.tilemap.tile_size
+        for lift in self.liftables:
+            pos = placed.get(lift.key)
+            if pos is not None:
+                lift.place_on_tile(int(pos[0]), int(pos[1]), ts)
 
     # ---- search -----------------------------------------------------------------------
     def start_search(self) -> None:
@@ -919,15 +951,67 @@ class WorldScene(Scene):
         if spec.is_boss:
             for i in range(len(spec.phases)):  # idempotent with on_boss_phase_solved
                 self.on_boss_phase_solved(spec, i)
+        effect = spec.reward.world_effect or "The altar lights."
         if progress is not None:
             progress.flags.add(f"solved:{spec.id}")
+            self.dismiss_golems()
             if spec.is_boss:
+                # Seal first, so the chapter tag points at a save made after the win.
+                tag = f"ch{spec.chapter}"
+                receipt = self._seal(f"Chapter {spec.chapter}: {spec.id} solved")
                 saves = getattr(self.game, "saves", None)
-                if saves is not None:
-                    saves.tag_chapter(SAVE_SLOT, f"ch{spec.chapter}")
+                if receipt is not None and saves is not None:
+                    if saves.tag_chapter(SAVE_SLOT, tag):
+                        effect += f"  (Sealed in the Ledger as {tag}.)"
+                    else:
+                        effect += "  (Saved.)"
         self._sync_altars()
-        effect = spec.reward.world_effect or "The altar lights."
         self.flash(effect, seconds=5.0)
+
+    def dismiss_golems(self) -> None:
+        """Send away every stamp golem whose ``dismiss_on`` puzzle is solved. They free their
+        tiles and leave without counting as kills."""
+        gone = [
+            e for e in self.enemies
+            if isinstance(e, StampGolem) and e.alive
+            and str(e.properties.get("dismiss_on") or "")
+            and self._is_solved(str(e.properties["dismiss_on"]))
+        ]
+        if not gone:
+            return
+        for golem in gone:
+            golem.dismiss(self)
+            if self.locked_target is golem:
+                self.locked_target = None
+        self.enemies[:] = [e for e in self.enemies if e not in gone]
+        self._solid_sig = None
+
+    # ---- map-triggered dialogue ---------------------------------------------------------
+    def pick_unseen(self, key: str) -> Dialogue | None:
+        """First dialogue for npc key ``key`` whose requires/unless/once fit and that has not
+        played yet (``seen:<id>``)."""
+        flags = self._progress().flags
+        return next(
+            (d for d in self.dialogue_bank.for_npc(key)
+             if d.eligible(flags) and d.seen_flag not in flags),
+            None,
+        )
+
+    def queue_dialogue(self, key: str) -> Dialogue | None:
+        """Queue the unseen dialogue for ``key`` (pushed by :meth:`update` as soon as the
+        world is the top scene). It is marked seen right away so it plays once."""
+        dialogue = self.pick_unseen(key)
+        if dialogue is not None:
+            self._progress().flags.add(dialogue.seen_flag)
+            self.queued_dialogue.append(dialogue)
+        return dialogue
+
+    def _play_queued_dialogue(self) -> bool:
+        if not self.queued_dialogue or self.game.scene is not self:
+            return False
+        self.held.clear()
+        self.game.push(DialogueScene(self.game, self.queued_dialogue.pop(0)))
+        return True
 
     def on_puzzle_skipped(self, spec: PuzzleSpec) -> None:
         """The player skipped ``spec``: Pell's ghostly bridge spans the gap (altar stays unlit)."""
@@ -1040,6 +1124,9 @@ class WorldScene(Scene):
         solid = list(self._base_solid)
         width = self.collision.width
         blocked: list[tuple[int, int]] = [lift.tile(ts) for lift in self.liftables]
+        for enemy in self.enemies:  # a rebuild must not open a standing golem's doorway
+            if isinstance(enemy, StampGolem) and enemy.alive:
+                blocked.extend(enemy.blocked_tiles)
         for door in self.doors:
             if door.locked:
                 blocked.extend(door.tiles(ts))
@@ -1083,6 +1170,10 @@ class WorldScene(Scene):
             "marks": {k: list(v) for k, v in sorted(self.marks.items())},
             "visited_waystones": sorted(list(v) for v in self.visited_waystones),
             "unlocked": sorted(self.unlocked),
+            "crates": {
+                ref: {k: list(v) for k, v in sorted(by_name.items())}
+                for ref, by_name in sorted(self.crates.items()) if by_name
+            },
         }
 
     def apply_extras(self, extras: dict[str, Any] | None) -> None:
@@ -1114,6 +1205,17 @@ class WorldScene(Scene):
         unlocked = extras.get("unlocked")
         if isinstance(unlocked, list):
             self.unlocked = {str(u) for u in unlocked}
+        crates = extras.get("crates")
+        if isinstance(crates, dict):
+            self.crates = {
+                str(ref): {
+                    str(k): [int(v[0]), int(v[1])] for k, v in by_name.items()
+                    if isinstance(v, list | tuple) and len(v) == 2
+                }
+                for ref, by_name in crates.items() if isinstance(by_name, dict)
+            }
+            self._apply_crates()
+            self._solid_sig = None
 
     def save_state(self) -> SaveState:
         """Snapshot the world and progress for the save store."""
@@ -1157,16 +1259,23 @@ class WorldScene(Scene):
 
     def save_game(self) -> None:
         """``:save``: write the slot and seal it in the Ledger (a git commit) when enabled."""
-        saves = getattr(self.game, "saves", None)
-        if saves is None:
+        receipt = self._seal()
+        if receipt is None:
             self.flash("No save store.")
             return
-        receipt = saves.save(SAVE_SLOT, self.save_state())
         self._progress().flags.add("first_seal")
         if receipt.sha:
             self.flash(f"Sealed in the Ledger.  git commit -> {receipt.sha}", 4.0)
         else:
             self.flash("Saved.", 3.0)
+
+    def _seal(self, message: str | None = None) -> SaveReceipt | None:
+        """Write the slot (and commit it to the Ledger when git is on); no flash."""
+        saves = getattr(self.game, "saves", None)
+        if saves is None:
+            return None
+        receipt: SaveReceipt = saves.save(SAVE_SLOT, self.save_state(), message)
+        return receipt
 
     def show_ledger(self) -> None:
         """``:ledger``: show the last few seals (git log --oneline)."""
@@ -1210,6 +1319,8 @@ class WorldScene(Scene):
         if self.fade.active:
             self.fade.update(dt)
             self.camera.follow(*self.player.center)
+            return
+        if self._play_queued_dialogue():
             return
         player = self.player
         typing = self.search_input is not None

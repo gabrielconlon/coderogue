@@ -6,6 +6,7 @@ area: The Census Hall
 chapter: 3
 enter_flag: entered:grand_directory
 boss: hollow_archivist
+defeat_dialogue: hollow_archivist
 tilesets: dungeon
 legend:
   # ground=dungeon:48 wall=dungeon:40,40,40,57,58,59

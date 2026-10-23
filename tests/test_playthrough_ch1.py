@@ -476,18 +476,17 @@ def test_into_the_hall_of_echoes(s):
     assert s.world.map_key == "hall_of_echoes"
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="grubble_intro/grubble_defeated (content/dialogue/echo_vale.yaml) are keyed to "
-    "npc 'grubble', but Grubble is an enemy and no npc/trigger in hall_of_echoes uses that "
-    "key, so his declaration never plays (same for 'ouroboros' in Chapter 2)",
-)
 def test_grubble_declares_himself_on_entry(s):
-    game = s.game
+    """The map's ``intro_dialogue: grubble`` plays on entry, before the fight."""
+    game, world = s.game, s.world
     game.step()
     scene = game.scene
-    played = isinstance(scene, DialogueScene) and scene.dialogue.id == "grubble_intro"
-    assert played or "grubble_declared" in flags(game)
+    assert isinstance(scene, DialogueScene) and scene.dialogue.id == "grubble_intro"
+    advance_dialogue(game)
+    assert game.scene is world
+    assert {"grubble_declared", "seen:grubble_intro"} <= flags(game)
+    game.step()
+    assert game.scene is world  # plays once
 
 
 # ---- Chapter 1 boss: Grubble ----------------------------------------------------------------
@@ -522,8 +521,17 @@ def test_grubble_three_lecterns(s):
         assert phase in boss.solved
         assert f"phase:ch1-b:{phase}" in flags(game)
     assert boss.dying
+    ledger = game.saves.ledger("slot1")
+    if ledger.available:  # sealed before tagging: the tag points at the post-win commit
+        assert "ch1" in ledger.tags()
+        assert "ch1-b solved" in ledger.log(1)[0].message
+        assert "Ledger as ch1" in world.message
     steps(game, 1.7)
     assert not boss.alive and boss not in world.enemies
+    scene = game.scene  # the map's defeat_dialogue plays once he falls
+    assert isinstance(scene, DialogueScene) and scene.dialogue.id == "grubble_defeated"
+    advance_dialogue(game)
+    assert game.scene is world
     assert "solved:ch1-b" in flags(game)
     assert game.progress.is_solved("ch1-b")
     ledger = game.saves.ledger("slot1")
@@ -541,17 +549,13 @@ def test_hall_exit_back_to_echo_vale(s):
 
 
 # ---- standalone findings --------------------------------------------------------------------
-@pytest.mark.xfail(
-    strict=True,
-    reason="boss lectern drafts are keyed by puzzle id only: AltarScene._on_pass (single_phase) "
-    "stores phase a's code as the ch1-b draft and _initial_text() loads it at lectern b, so "
-    "lectern b opens with Grubble's proclamation instead of the census starter",
-)
 def test_second_lectern_opens_with_its_own_starter(tmp_path, monkeypatch):
     monkeypatch.setenv("CODEROGUE_HOME", str(tmp_path))
     game = Game(headless=True)
     world = WorldScene(game, resource_path("content", "maps", "hall_of_echoes.tmj"))
     game.push(world)
+    game.step()
+    advance_dialogue(game)  # Grubble's declaration
     boss = world.active_boss()
     assert isinstance(boss, Grubble)
     crown_strike(game, world, boss)
@@ -567,3 +571,13 @@ def test_second_lectern_opens_with_its_own_starter(tmp_path, monkeypatch):
     assert isinstance(scene, AltarScene) and scene.phase == 1
     starter = scene.spec.body_for(1).languages[scene.language].starter.rstrip("\n")
     assert scene.editor.text == starter
+    # Phase a's code is kept under its own key; re-opening lectern a is refused.
+    assert game.progress.draft("ch1-b#0", scene.language) is not None
+    assert game.progress.draft("ch1-b", scene.language) is None
+    command(game, "q")
+    assert game.scene is world
+    lectern_a = by_name(world.altars, "lectern_a")
+    world.player.place_center(*lectern_a.center)
+    interact(game)
+    assert game.scene is world
+    assert world.message == "This lectern's phase is already won."

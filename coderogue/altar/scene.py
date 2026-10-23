@@ -141,8 +141,14 @@ class AltarScene(Scene):
         """The puzzle's code/hints/solution for ``lid`` (default: current language)."""
         return self.body.languages.get(lid or self.language)
 
+    @property
+    def draft_key(self) -> str:
+        """Key the drafts are stored under: ``<id>`` or ``<id>#<phase>`` for a boss phase,
+        so each lectern keeps its own code."""
+        return self.spec.id if self.phase is None else f"{self.spec.id}#{self.phase}"
+
     def _initial_text(self, lid: str) -> str:
-        draft = self.progress.draft(self.spec.id, lid)
+        draft = self.progress.draft(self.draft_key, lid)
         if draft is not None:
             return draft
         variant = self.variant(lid)
@@ -349,21 +355,21 @@ class AltarScene(Scene):
                 hook(self.spec, self.phase)
         if self.phase is not None and self.phase + 1 < len(self.spec.phases):
             if self.single_phase:
-                self.progress.set_draft(self.spec.id, self.language, self.editor.text)
+                self.progress.set_draft(self.draft_key, self.language, self.editor.text)
                 self.editor.last_message = f"Phase {self.phase + 1} cleared! Find the next lectern."
                 self.closing = CLOSE_DELAY_S
                 return True
+            self.save_drafts()  # keep this phase's code under its own key
             self.phase += 1
             for lid, editor in self.editors.items():
-                variant = self.variant(lid)
-                editor.set_text(variant.starter.rstrip("\n") if variant else "")
+                editor.set_text(self._initial_text(lid))
             self.editor.last_message = f"Phase {self.phase} cleared! The next phase begins."
             self.hint_shown = 0
             return False
         before = self.progress.xp
         self.progress.mark_solved(self.spec.id, self.language, xp=self.spec.reward.xp)
         self.xp_gained = self.progress.xp - before
-        self.progress.set_draft(self.spec.id, self.language, self.editor.text)
+        self.progress.set_draft(self.draft_key, self.language, self.editor.text)
         self.altar.lit = True
         hook = getattr(self.world, "on_puzzle_solved", None)
         if hook is not None:
@@ -387,7 +393,7 @@ class AltarScene(Scene):
         variant = self.variant()
         if variant is None:
             return False
-        self.progress.set_draft(self.spec.id, self.language, self.editor.text)
+        self.progress.set_draft(self.draft_key, self.language, self.editor.text)
         self.progress.mark_skipped(self.spec.id)
         self.editor.set_text(variant.solution.rstrip("\n"))
         self.view.error_lines = set()
@@ -404,7 +410,7 @@ class AltarScene(Scene):
         for lid, editor in self.editors.items():
             if lid == self.skip_lang:
                 continue
-            self.progress.set_draft(self.spec.id, lid, editor.text)
+            self.progress.set_draft(self.draft_key, lid, editor.text)
 
     def leave(self) -> None:
         """Pop the altar scene (drafts are kept)."""
