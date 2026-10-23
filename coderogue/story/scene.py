@@ -3,7 +3,7 @@
 Keys: ``j`` / Enter / Space finish the typewriter reveal or advance to the next line;
 with choices showing, ``j``/``k`` (or Down/Up) move and Enter/Space picks; Esc skips the
 whole conversation. When it ends the dialogue's ``sets`` flags (plus the chosen reply's)
-go into ``game.progress.flags`` if the game has a ``progress``, else into ``flags``.
+go into ``flags`` when one is passed, else into ``game.progress.flags``, else a local set.
 """
 
 from __future__ import annotations
@@ -71,7 +71,8 @@ class DialogueScene(Scene):
         super().__init__(game)
         self.dialogue = dialogue
         self.on_done = on_done
-        self.flags = flags if flags is not None else set()
+        self.flags = flags
+        self._explicit_flags = flags is not None
         self.index = 0
         self.elapsed = 0.0
         self.choosing = False
@@ -97,9 +98,14 @@ class DialogueScene(Scene):
 
     def target_flags(self) -> Any:
         """Where finished-dialogue flags go: ``game.progress.flags`` or ``self.flags``."""
+        if self._explicit_flags:
+            return self.flags
         progress = getattr(self.game, "progress", None)
         flags = getattr(progress, "flags", None)
-        return flags if flags is not None else self.flags
+        if flags is None:
+            self.flags = set() if self.flags is None else self.flags
+            return self.flags
+        return flags
 
     def advance(self) -> None:
         """Complete the reveal, or go to the next line / the choices / the end."""
