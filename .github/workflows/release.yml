@@ -1,0 +1,108 @@
+name: Release
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch: # build without publishing (artifacts only), for testing the pipeline
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-14
+            label: macos-arm64
+          - os: windows-latest
+            label: windows-x64
+          - os: ubuntu-22.04
+            label: linux-x64
+    runs-on: ${{ matrix.os }}
+    env:
+      ZIP_NAME: CodeRogue-${{ matrix.label }}.zip
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # raises the API limit for fetch_runtime.py
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[build]"
+
+      - name: Cache Kenney assets
+        uses: actions/cache@v4
+        with:
+          path: assets/kenney
+          key: kenney-${{ hashFiles('tools/fetch_assets.py') }}
+      - name: Fetch assets
+        run: python tools/fetch_assets.py
+      - name: Fetch Python runtime
+        run: python tools/fetch_runtime.py
+
+      - name: Build
+        run: python tools/build.py --clean
+
+      - name: Smoke test (macOS)
+        if: runner.os == 'macOS'
+        env:
+          CODEROGUE_HOME: ${{ runner.temp }}/home
+        run: |
+          dist/CodeRogue.app/Contents/MacOS/CodeRogue --doctor
+          dist/CodeRogue.app/Contents/MacOS/CodeRogue --headless-frames 60 --new
+      - name: Smoke test (Linux)
+        if: runner.os == 'Linux'
+        env:
+          CODEROGUE_HOME: ${{ runner.temp }}/home
+        run: |
+          dist/CodeRogue/CodeRogue --doctor
+          dist/CodeRogue/CodeRogue --headless-frames 60 --new
+      - name: Smoke test (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        env:
+          CODEROGUE_HOME: ${{ runner.temp }}\home
+        run: |
+          # A --windowed exe is a GUI-subsystem process: the shell does not wait for it and it
+          # has no stdout, so wait explicitly and check exit codes only.
+          foreach ($run in @(@('--doctor'), @('--headless-frames', '60', '--new'))) {
+            $p = Start-Process -FilePath dist\CodeRogue\CodeRogue.exe -ArgumentList $run -Wait -PassThru -NoNewWindow
+            if ($p.ExitCode -ne 0) { throw "CodeRogue $run exited $($p.ExitCode)" }
+          }
+
+      - name: Zip (macOS)
+        if: runner.os == 'macOS'
+        run: ditto -c -k --keepParent dist/CodeRogue.app "$ZIP_NAME"
+      - name: Zip (Linux)
+        if: runner.os == 'Linux'
+        run: cd dist && zip -qry "../$ZIP_NAME" CodeRogue
+      - name: Zip (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: Compress-Archive -Path dist\CodeRogue -DestinationPath $env:ZIP_NAME
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.ZIP_NAME }}
+          path: ${{ env.ZIP_NAME }}
+          if-no-files-found: error
+
+  release:
+    # One job publishes, so parallel matrix jobs never race to create the release.
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: out
+          merge-multiple: true
+      - name: Upload release assets
+        uses: softprops/action-gh-release@v2
+        with:
+          files: out/CodeRogue-*.zip
+          draft: true # publish by hand once the zips are checked (unsigned builds)
+          fail_on_unmatched_files: true

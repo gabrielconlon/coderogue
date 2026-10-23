@@ -1,0 +1,57 @@
+# -*- mode: python -*-
+# PyInstaller spec for CodeRogue, rendered by tools/build.py into build/CodeRogue.spec.
+# Do not edit the rendered copy; edit this template. The $$-markers are filled with
+# Python literals (repr), so paths with spaces or backslashes need no shell quoting.
+from PyInstaller.utils.hooks import collect_submodules
+
+block_cipher = None
+
+a = Analysis(
+    [${entry}],
+    pathex=[${repo}],
+    binaries=[],
+    datas=${datas},
+    hiddenimports=collect_submodules("coderogue") + ${hiddenimports},
+    hookspath=[],
+    runtime_hooks=[],
+    excludes=${excludes},
+    noarchive=False,
+)
+pyz = PYZ(a.pure)
+
+exe = EXE(
+    pyz,
+    a.scripts,
+    [],
+    exclude_binaries=True,
+    name=${app_name},
+    debug=False,
+    strip=False,
+    upx=False,
+    console=${console},
+    disable_windowed_traceback=False,
+    argv_emulation=False,
+    target_arch=None,
+    icon=${icon},
+)
+coll = COLLECT(
+    exe,
+    a.binaries,
+    a.datas,
+    strip=False,
+    upx=False,
+    name=${app_name},
+)
+if ${macos_bundle}:
+    app = BUNDLE(
+        coll,
+        name=${app_name} + ".app",
+        icon=${icon},
+        bundle_identifier=${bundle_id},
+        version=${version},
+        info_plist={
+            "CFBundleShortVersionString": ${version},
+            "NSHighResolutionCapable": True,
+            "LSMinimumSystemVersion": "11.0",
+        },
+    )

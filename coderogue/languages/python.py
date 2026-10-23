@@ -8,7 +8,6 @@ import os
 import re
 import shutil
 import sys
-from pathlib import Path
 
 from coderogue.languages.base import (
     ErrorRule,
@@ -24,23 +23,65 @@ from coderogue.languages.base import (
 _KNOWN_NAMES = sorted(set(dir(builtins)) | set(keyword.kwlist))
 
 
-def _resource_root() -> Path:
-    """Where bundled resources live: the PyInstaller unpack dir, or the repository root."""
-    meipass = getattr(sys, "_MEIPASS", None)
-    if meipass:
-        return Path(meipass)
-    if getattr(sys, "frozen", False):
-        return Path(sys.executable).resolve().parent
-    return Path(__file__).resolve().parents[2]
+#: Oldest CPython the puzzles are written for; older interpreters on PATH are skipped.
+MIN_PYTHON: tuple[int, ...] = (3, 10)
+
+#: Where a bundled python-build-standalone install lives (``tools/fetch_runtime.py``).
+RUNTIME_PARTS = ("runtime", "python")
+_RUNTIME_BINS = ("python.exe", "bin/python3", "bin/python")
 
 
-def _bundled_python() -> str | None:
-    base = _resource_root() / "runtime" / "python"
-    for rel in ("python.exe", "bin/python3", "bin/python", "python3", "python"):
+def is_frozen() -> bool:
+    """True inside a PyInstaller build, where ``sys.executable`` is the game itself."""
+    return bool(getattr(sys, "frozen", False))
+
+
+def bundled_python() -> str | None:
+    """The interpreter shipped next to the game under ``runtime/python/``, if present."""
+    from coderogue.app import resource_path
+
+    base = resource_path(*RUNTIME_PARTS)
+    for rel in _RUNTIME_BINS:
         cand = base / rel
         if cand.is_file() and os.access(cand, os.X_OK):
             return str(cand)
     return None
+
+
+def _clt_missing() -> bool:
+    """macOS: ``/usr/bin/python3`` is a stub that pops an installer unless the CLT exist."""
+    if sys.platform != "darwin":
+        return False
+    return run_probe(["/usr/bin/xcode-select", "-p"]) is None
+
+
+def _path_candidates() -> list[str]:
+    """Every ``python3``/``python`` on PATH, then in common install dirs a GUI app's PATH
+    lacks. All matches are returned (not just the first) so an old ``/usr/bin/python3``
+    does not hide a newer Homebrew one."""
+    dirs = os.environ.get("PATH", os.defpath).split(os.pathsep)
+    if sys.platform == "darwin":
+        dirs += ["/opt/homebrew/bin", "/usr/local/bin"]
+    elif sys.platform.startswith("linux"):
+        dirs += ["/usr/local/bin", "/usr/bin"]
+    found: list[str] = []
+    for d in dict.fromkeys(d for d in dirs if d):
+        for name in ("python3", "python"):
+            exe = shutil.which(name, path=d)
+            if not exe or exe in found:
+                continue
+            if exe == "/usr/bin/python3" and _clt_missing():
+                continue
+            found.append(exe)
+    return found
+
+
+def _probe_exe(exe: str, language_id: str) -> LanguageRuntime | None:
+    out = run_probe([exe, "--version"])
+    version = parse_version(out) if out else None
+    if not out or not version or version < MIN_PYTHON:
+        return None
+    return LanguageRuntime(language_id, exe, version, out.strip())
 
 
 def _name_error(m: re.Match[str], line: int | None) -> str:
@@ -147,7 +188,8 @@ PYTHON_RULES: tuple[ErrorRule, ...] = (
 
 
 class PythonLanguage(Language):
-    """CPython. Uses the game's own interpreter in development."""
+    """CPython. The game's own interpreter in development; when frozen, the bundled runtime,
+    otherwise ``python3`` from PATH."""
 
     def __init__(self) -> None:
         super().__init__(
@@ -160,17 +202,18 @@ class PythonLanguage(Language):
         )
 
     def _probe(self) -> LanguageRuntime | None:
-        if not getattr(sys, "frozen", False):
+        """In development: the game's own interpreter. Frozen (where ``sys.executable`` is
+        the game): the bundled runtime, then ``python3``/``python`` on PATH (>= 3.10), else
+        ``None`` so the Python tab is greyed out."""
+        if not is_frozen():
             v = tuple(sys.version_info[:3])
             return LanguageRuntime(self.id, sys.executable, v, sys.version.split()[0])
-        exe = _bundled_python() or shutil.which("python3") or shutil.which("python")
-        if not exe:
-            return None
-        out = run_probe([exe, "--version"])
-        version = parse_version(out) if out else None
-        if not version:
-            return None
-        return LanguageRuntime(self.id, exe, version, out.strip() if out else "")
+        bundled = bundled_python()
+        for exe in ([bundled] if bundled else []) + _path_candidates():
+            rt = _probe_exe(exe, self.id)
+            if rt:
+                return rt
+        return None
 
     def command(self, runtime: LanguageRuntime, script_path: str) -> list[str]:
         # -I isolated (ignores PYTHON* env and user site), -S no site, -B no .pyc files,

@@ -214,7 +214,60 @@ def build_parser() -> argparse.ArgumentParser:
         "--arrows", action="store_true", help="also bind arrow keys and WASD (fallback)"
     )
     parser.add_argument("--new", action="store_true", help="ignore the saved slot; start fresh")
+    # Hidden: support/packaging check. Prints languages, content and asset status, then exits.
+    parser.add_argument("--doctor", action="store_true", help=argparse.SUPPRESS)
     return parser
+
+
+#: Files whose absence means a broken install (checked by ``--doctor``).
+DOCTOR_CHECKS: tuple[tuple[str, ...], ...] = (
+    DEFAULT_MAP,
+    ("content", "quests.yaml"),
+    ("content", "puzzles"),
+    ("content", "dialogue"),
+    ("assets", "fonts"),
+    ("assets", "kenney", "tiny-dungeon", "Tilemap", "tilemap_packed.png"),
+    ("assets", "kenney", "tiny-town", "Tilemap", "tilemap_packed.png"),
+)
+
+
+#: One-line programs ``--doctor`` runs through the real sandbox for each language found.
+DOCTOR_HELLO = {"python": 'print("hello")', "bash": "echo hello", "powershell": "'hello'"}
+
+
+def doctor() -> int:
+    """Print what this install can see and run a one-liner in each language found.
+
+    Exit code 1 if required content or assets are missing, or a found Python cannot run.
+    """
+    from coderogue.languages import registry
+    from coderogue.puzzles.sandbox import run_script
+
+    frozen = bool(getattr(sys, "frozen", False))
+    print(f"CodeRogue doctor (frozen={frozen}, python={sys.version.split()[0]})")
+    print(f"resource root: {resource_path()}")
+    print(f"content dir:   {resource_path('content')}")
+    ok = True
+    for parts in DOCTOR_CHECKS:
+        p = resource_path(*parts)
+        present = p.exists()
+        ok = ok and present
+        print(f"  [{'ok' if present else 'MISSING'}] {'/'.join(parts)}")
+    maps = sorted(resource_path("content", "maps").glob("*.tmj"))
+    print(f"  maps: {len(maps)}")
+    print("languages:")
+    for lid, lang in registry().items():
+        rt = lang.detect()
+        if rt is None:
+            print(f"  {lid}: not found (greyed out)")
+            continue
+        res = run_script(lang, rt, DOCTOR_HELLO.get(lid, ""), timeout_s=10.0)
+        ran = res.stdout.strip() == "hello"
+        if lid == "python":  # the one we ship; bash/pwsh are the player's own installs
+            ok = ok and ran
+        status = "runs ok" if ran else f"FAILED to run: {(res.stderr or res.stdout).strip()[:200]}"
+        print(f"  {lid}: {rt.version_str} at {rt.executable} ({status})")
+    return 0 if ok else 1
 
 
 def _restore_save(game: Game, world: WorldScene) -> None:
@@ -253,6 +306,8 @@ def start_world(game: Game, map_path: Path, new: bool = False) -> WorldScene:
 def main(argv: list[str] | None = None) -> int:
     """Entry point. Returns a process exit code."""
     args = build_parser().parse_args(sys.argv[1:] if argv is None else argv)
+    if args.doctor:
+        return doctor()
     headless = args.headless_frames is not None
     if headless:
         os.environ["SDL_VIDEODRIVER"] = "dummy"

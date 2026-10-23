@@ -16,6 +16,7 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["pytest>=8", "ruff>=0.6"]
+build = ["pyinstaller>=6.16"]
 
 [project.scripts]
 coderogue = "coderogue.app:main"

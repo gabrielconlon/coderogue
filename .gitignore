@@ -5,6 +5,8 @@ __pycache__/
 .ruff_cache/
 build/
 dist/
+# standalone CPython for player code, fetched by tools/fetch_runtime.py
+runtime/
 *.egg-info/
 *.spec
 # Kenney packs are fetched by tools/fetch_assets.py, never committed
