@@ -580,15 +580,31 @@ class WorldScene(Scene):
         self.message_time = seconds
 
     # ---- VISUAL lock-on ---------------------------------------------------------------
-    def nearest_enemy(self, max_dist: float) -> Enemy | None:
-        """The living enemy nearest the hero within ``max_dist`` px, or None."""
-        best, best_d = None, max_dist
+    def lockable_targets(self) -> list[Entity]:
+        """Everything ``v`` may lock on to: living enemies plus a boss's live children
+        (crown letters, worm segments)."""
+        out: list[Entity] = []
         for enemy in self.enemies:
             if not enemy.alive:
                 continue
-            d = _dist(self.player, enemy)
-            if d <= best_d:
-                best, best_d = enemy, d
+            if isinstance(enemy, Boss):
+                out.extend(enemy.targets())
+            else:
+                out.append(enemy)
+        return out
+
+    def nearest_enemy(self, max_dist: float) -> Entity | None:
+        """The lockable target nearest the hero within ``max_dist`` px, or None. A glowing
+        target (the Ouroboros segment that may be cleaved) wins over anything nearer."""
+        best: Entity | None = None
+        best_key = (1, max_dist)
+        for target in self.lockable_targets():
+            d = _dist(self.player, target)
+            if d > max_dist:
+                continue
+            key = (0 if getattr(target, "glowing", False) else 1, d)
+            if key <= best_key:
+                best, best_key = target, key
         return best
 
     def toggle_visual(self) -> None:
@@ -621,8 +637,8 @@ class WorldScene(Scene):
         cx, cy = current.center
         dx, dy = direction
         best, best_score = None, math.inf
-        for enemy in self.enemies:
-            if enemy is current or not enemy.alive or _dist(self.player, enemy) > CYCLE_RANGE:
+        for enemy in self.lockable_targets():
+            if enemy is current or _dist(self.player, enemy) > CYCLE_RANGE:
                 continue
             ex, ey = enemy.center
             vx, vy = ex - cx, ey - cy
@@ -644,7 +660,7 @@ class WorldScene(Scene):
                 self.modes.set_mode(Mode.NORMAL)
             return
         if (
-            target.alive and target in self.enemies
+            target.alive and target in self.lockable_targets()
             and _dist(self.player, target) <= CYCLE_RANGE
         ):
             return

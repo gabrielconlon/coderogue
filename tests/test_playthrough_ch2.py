@@ -547,7 +547,7 @@ def _cleave_glowing(game: Game, world: WorldScene, boss: Ouroboros, segment) -> 
     spot = (sx, cy) if key in "jk" else (cx, sy)
     world.player.place_center(*spot)
     tap(game, "v")
-    assert world.modes.mode is Mode.VISUAL and world.locked_target is boss
+    assert world.modes.mode is Mode.VISUAL and world.locked_target is segment
     tap(game, "d")
     tap(game, "d")
     tap(game, "v")
@@ -606,11 +606,6 @@ def test_pell_second_words_and_the_road_north(s):
 
 
 # ---- design gaps ----------------------------------------------------------------------------
-@pytest.mark.xfail(
-    strict=True,
-    reason="v locks on to world.enemies only (WorldScene.nearest_enemy/toggle_visual), so it "
-    "always picks the Ouroboros head; DESIGN 3 says 'lock on to a glowing segment with v'.",
-)
 def test_v_locks_on_to_the_glowing_segment(tmp_path, monkeypatch):
     monkeypatch.setenv("CODEROGUE_HOME", str(tmp_path))
     game = Game(headless=True)

@@ -679,12 +679,6 @@ def test_the_road_to_rootholm_is_commented_out(s):
 
 
 # ---- design gaps ----------------------------------------------------------------------------
-@pytest.mark.xfail(
-    strict=True,
-    reason="AltarScene.usable (altar/scene.py:97) only checks that an interpreter exists, not "
-    "spec.requires: with bash 3.2 the 3-01 bash variant is offered and the cast fails with a "
-    "RunnerError notice instead of being greyed out.",
-)
 def test_old_bash_greys_out_the_inventory_variant(tmp_path, monkeypatch):
     monkeypatch.setenv("CODEROGUE_HOME", str(tmp_path))
     bash = get("bash")

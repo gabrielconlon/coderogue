@@ -94,7 +94,19 @@ class AltarScene(Scene):
         self.single_phase = single_phase and spec.is_boss
         self.offered = spec.language_ids()
         avail = available()
-        self.usable = [lid for lid in self.offered if lid in avail]
+        self.usable: list[str] = []
+        self.too_old: dict[str, str] = {}  # language id -> "needs bash >=4, found 3.2"
+        for lid in self.offered:
+            if lid not in avail:
+                continue
+            spec_req = spec.requires.get(lid)
+            runtime = avail[lid].detect()
+            if spec_req and runtime is not None and not avail[lid].version_satisfies(
+                runtime, spec_req
+            ):
+                self.too_old[lid] = f"needs {lid} {spec_req}, found {runtime.version_str}"
+                continue
+            self.usable.append(lid)
         self.solved_view = progress.is_solved(spec.id)
         self.editors: dict[str, VimEditor] = {}
         self.views: dict[str, EditorView] = {}
@@ -299,7 +311,11 @@ class AltarScene(Scene):
             self.editor.last_message = f"This altar does not speak {name}."
             return False
         if lid not in self.usable:
-            self.editor.last_message = f"{name} was not found on this computer."
+            reason = self.too_old.get(lid)
+            self.editor.last_message = (
+                f"{name} here is too old: {reason}." if reason
+                else f"{name} was not found on this computer."
+            )
             return False
         if lid == self.language:
             return True
