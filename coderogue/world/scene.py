@@ -1500,7 +1500,8 @@ class WorldScene(Scene):
         ("yy / p", "lift a crate / put it down", "yank"),
         ("/word  then  n", "search for things by name, next match", "search"),
         ("ma  /  'a", "set a mark at a waystone / jump back to it", "marks"),
-        (":save  :ledger", "seal a save in git / read the Ledger", None),
+        (":save", "save the game, anywhere (waystones also save, rest, show the Ledger)", None),
+        (":ledger", "read the Ledger: your saves are git commits", None),
         ("Esc", "when in doubt, Escape", None),
     )
 
@@ -1671,7 +1672,7 @@ class WorldScene(Scene):
         if self.toast:
             draw_toast(surface, self.toast)
         if self._show_controls_hint():
-            hint = "h j k l  walk     x  strike     i / Enter  talk & use     ?  help"
+            hint = "h j k l  walk    x  strike    i / Enter  talk & use    :save  save    ?  help"
             hw = render_text(hint, 14).get_width()
             draw_text(surface, hint, (w - hw - 8, h - 46), size=14, color=(200, 190, 170))
         if self.modes.mode is Mode.COMMAND:
