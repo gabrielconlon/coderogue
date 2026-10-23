@@ -57,6 +57,7 @@ BG_COLOR = (20, 16, 24)
 
 PROP_SPRITES = {"npc": sprites.KNIGHT, "chest": sprites.CHEST}
 SAVE_SLOT = "slot1"
+MARKER_COLOR = (255, 225, 90)
 
 # Default sprites for the Phase 5b objects (Tiny Dungeon ids unless noted).
 DOOR_TILE = 45
@@ -161,6 +162,8 @@ class WorldScene(Scene):
         self.dialogue_bank = DialogueBank.load_default()
         self.altar_handler: Callable[[Altar], None] | None = None
         self.show_debug = True
+        self.show_help = False
+        self.marker_clock = 0.0
         self.message = ""
         self.message_time = 0.0
         self.time = 0.0
@@ -475,6 +478,7 @@ class WorldScene(Scene):
             self.modes.clear_count()
             self.interact()
         elif action is Action.ESCAPE:
+            self.show_help = False
             self.escape()
         elif action is Action.COMMAND:
             self.modes.set_mode(Mode.COMMAND)
@@ -509,6 +513,8 @@ class WorldScene(Scene):
                 self.flash("You have not learned marks yet.")
         elif action is Action.DEBUG:
             self.show_debug = not self.show_debug
+        elif action is Action.HELP:
+            self.show_help = not self.show_help
         else:
             self.modes.clear_count()
 
@@ -1309,6 +1315,77 @@ class WorldScene(Scene):
             self.flash("You wake at the spawn point.")
         p.iframes = HURT_IFRAMES
 
+    # ---- guidance ---------------------------------------------------------------------
+    def _show_controls_hint(self) -> bool:
+        """Show the one-line key hint until the player has left Little Tilde."""
+        flags = self._progress().flags
+        return "entered:echo_vale" not in flags and not self.show_help
+
+    def objective_targets(self) -> list[Entity]:
+        """Things worth walking to right now: NPCs with an unplayed line for the current
+        flags, unlit altars, and unopened chests. Drawn with a bouncing arrow."""
+        targets: list[Entity] = []
+        for npc in self.npcs:
+            if self.pick_unseen(npc.key) is not None:
+                targets.append(npc)
+        targets.extend(a for a in self.altars if not a.lit)
+        targets.extend(c for c in self.chests if not c.opened)
+        return targets
+
+    def _draw_markers(self, view: pygame.Surface, offset: tuple[int, int]) -> None:
+        """Bouncing arrows above objective targets, and a key badge on the thing in reach."""
+        bounce = -int(abs(math.sin(self.time * 4.0)) * 3)
+        for ent in self.objective_targets():
+            cx = round(ent.x + ent.w / 2) - offset[0]
+            top = round(ent.y) - offset[1] - 6 + bounce
+            pts = [(cx - 3, top - 4), (cx + 3, top - 4), (cx, top)]
+            pygame.draw.polygon(view, MARKER_COLOR, pts)
+            pygame.draw.polygon(view, (20, 20, 24), pts, 1)
+        near = self.npc_in_reach() or self.altar_in_reach() or self.chest_in_reach()
+        if near is None:
+            near = self.waystone_in_reach()
+        if near is not None:
+            cx = round(near.x + near.w / 2) - offset[0]
+            top = round(near.y) - offset[1] - 15
+            badge = pygame.Rect(cx - 4, top, 9, 9)
+            pygame.draw.rect(view, (20, 20, 24), badge)
+            pygame.draw.rect(view, MARKER_COLOR, badge, 1)
+            pygame.draw.line(view, MARKER_COLOR, (cx, top + 3), (cx, top + 6))
+            view.set_at((cx, top + 1), MARKER_COLOR)
+
+    def _draw_help(self, surface: pygame.Surface) -> None:
+        """The controls overlay toggled with ``?`` or F1."""
+        w, h = surface.get_size()
+        panel = pygame.Rect(w // 2 - 360, h // 2 - 190, 720, 380)
+        shade = pygame.Surface((w, h), pygame.SRCALPHA)
+        shade.fill((0, 0, 0, 150))
+        surface.blit(shade, (0, 0))
+        pygame.draw.rect(surface, (14, 13, 18), panel)
+        pygame.draw.rect(surface, MARKER_COLOR, panel, 2)
+        draw_text(
+            surface, "The Four Stances   (press ? or Esc to close)",
+            (panel.x + 18, panel.y + 12), size=18, color=MARKER_COLOR,
+        )
+        lines = [
+            ("h j k l", "walk (hold)"),
+            ("x", "strike a bug  (3x strikes three times)"),
+            ("w / b / e", "dash forward / back / short hop"),
+            ("i  or  Enter", "talk, read, use an altar, open a chest"),
+            ("v", "VISUAL: lock on to a bug, h j k l to cycle"),
+            ("dd", "cleave the whole row you face"),
+            ("u", "rewind 3 seconds (3 charges, refilled at waystones)"),
+            ("yy / p", "lift a crate / put it down"),
+            ("/word  then  n", "search for things by name, next match"),
+            ("ma  /  'a", "set a mark at a waystone / jump back to it"),
+            (":save  :ledger", "seal a save in git / read the Ledger"),
+            ("Esc", "when in doubt, Escape"),
+        ]
+        y = panel.y + 48
+        for key, what in lines:
+            draw_text(surface, key, (panel.x + 24, y), size=16, color=(230, 225, 210))
+            draw_text(surface, what, (panel.x + 210, y), size=16, color=(170, 165, 155))
+            y += 26
+
     # ---- simulation -------------------------------------------------------------------
     def update(self, dt: float) -> None:
         """One fixed step: player, enemies, combat, items, doors, camera."""
@@ -1356,8 +1433,11 @@ class WorldScene(Scene):
         self.tilemap.draw_above(view, offset)
         self._draw_search(view, offset)
         self._draw_lock(view, offset)
+        self._draw_markers(view, offset)
         pygame.transform.scale(view, surface.get_size(), surface)
         self._draw_overlay(surface)
+        if self.show_help:
+            self._draw_help(surface)
 
     @staticmethod
     def _sprite_rect(ent: Entity, offset: tuple[int, int]) -> pygame.Rect:
@@ -1399,6 +1479,11 @@ class WorldScene(Scene):
             pygame.draw.line(view, VISUAL_COLOR, (x, y), (x, y + dy * n))
 
     def _prompt(self) -> str:
+        npc = self.npc_in_reach()
+        if npc is not None and self.altar_in_reach() is None:
+            label = npc.name if npc.name and not npc.name.startswith("#") else "it"
+            verb = "look at" if npc.key in ("ink_shelf", "namestone_sign") else "talk to"
+            return f"i / Enter: {verb} {label}"
         if self.altar_in_reach() is not None:
             return "i / Enter: use altar"
         if self.waystone_in_reach() is not None:
@@ -1431,6 +1516,10 @@ class WorldScene(Scene):
             showcmd = render_text(pending, 16)
             draw_text(surface, pending, (w - showcmd.get_width() - 12, h - 24), size=16)
         self.area_card.draw(surface)
+        if self._show_controls_hint():
+            hint = "h j k l  walk     x  strike     i / Enter  talk & use     ?  help"
+            hw = render_text(hint, 14).get_width()
+            draw_text(surface, hint, (w - hw - 8, h - 46), size=14, color=(200, 190, 170))
         if self.modes.mode is Mode.COMMAND:
             pygame.draw.rect(surface, (0, 0, 0), (0, h - 26, w, 26))
             draw_text(surface, ":" + self.modes.command_buffer + "_", (8, h - 22), size=16)

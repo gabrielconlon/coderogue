@@ -291,6 +291,10 @@ def test_new_game_starts_in_scriptorium(s):
     assert "entered:little_tilde" in flags(game)
     spawn = by_name(world.tilemap.data.objects_of_type("player_spawn"), "spawn")
     assert world.player.center == pytest.approx(spawn.center)
+    # Pell speaks on wakeup: the scriptorium's intro_dialogue plays before the player moves.
+    game.step(1 / 60)
+    intro = advance_dialogue(game)
+    assert intro.dialogue.id == "pell_intro" and "met:pell" in flags(game)
     dx, dy = walk(game, world, "l", 0.25)
     assert dx > 15 and dy == pytest.approx(0)
     dx, dy = walk(game, world, "j", 0.2)
@@ -299,8 +303,6 @@ def test_new_game_starts_in_scriptorium(s):
 
 def test_pell_sends_wren_for_ink(s):
     game, world = s.game, s.world
-    assert talk(game, world, "Pell") == "pell_intro"
-    assert "met:pell" in flags(game)
     assert talk(game, world, "Pell") == "pell_ink_reminder"
     assert talk(game, world, "ink_shelf") == "ink_shelf"
     assert "got_ink" in flags(game)

@@ -38,6 +38,7 @@ class Action(Enum):
     SEARCH = auto()  # ``/``: start a search prompt
     SEARCH_NEXT = auto()  # ``n``: next search match
     MARK = auto()  # ``m`` + letter: set a mark at a waystone
+    HELP = auto()  # ``?`` or F1: toggle the controls overlay
     JUMP_MARK = auto()  # ``'`` + letter: fast-travel to a mark
 
 
@@ -63,6 +64,7 @@ VIM_KEYS: dict[int, Action] = {
     pygame.K_v: Action.VISUAL,
     pygame.K_u: Action.UNDO,
     pygame.K_F3: Action.DEBUG,
+    pygame.K_F1: Action.HELP,
     pygame.K_d: Action.DELETE,
     pygame.K_y: Action.YANK,
     pygame.K_p: Action.PUT,
@@ -90,6 +92,7 @@ FALLBACK_KEYS: dict[int, Action] = {
 # layouts but a plain key elsewhere).
 VIM_CHARS: dict[str, Action] = {
     ":": Action.COMMAND,
+    "?": Action.HELP,
     "/": Action.SEARCH,
     "'": Action.JUMP_MARK,
 }

@@ -14,7 +14,7 @@ from coderogue.world.collision import CollisionGrid, move_box
 from .base import Entity
 
 TILE = 16
-SPEED = 90.0  # px/s
+SPEED = 72.0  # px/s
 DASH_SPEED = 240.0  # px/s
 DASH_TILES = 2  # default dash distance
 MAX_DASH_TILES = 6

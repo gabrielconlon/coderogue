@@ -20,7 +20,7 @@ import pygame
 
 from .base import Entity
 
-INTERACT_REACH = 6  # px the talk zone extends beyond the 16x16 box
+INTERACT_REACH = 10  # px the talk zone extends beyond the 16x16 box
 
 
 class Npc(Entity):

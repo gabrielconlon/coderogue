@@ -9,7 +9,7 @@ import pygame
 
 from .base import Entity
 
-INTERACT_REACH = 4  # px the interaction zone extends beyond the altar's 16x16 box
+INTERACT_REACH = 8  # px the interaction zone extends beyond the altar's 16x16 box
 
 
 def dim_sprite(sprite: pygame.Surface) -> pygame.Surface:

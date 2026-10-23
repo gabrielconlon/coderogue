@@ -93,12 +93,46 @@ def _sweep_axis(
     return pos, False
 
 
+CORNER_NUDGE = 6.0  # px: how far a blocked move may slide sideways to line up with a doorway
+
+
+def _nudge(
+    grid: CollisionGrid, x: float, y: float, w: float, h: float, delta: float, axis: int
+) -> float | None:
+    """If moving ``delta`` along ``axis`` is blocked but a sideways shift of at most
+    ``CORNER_NUDGE`` would let it through (a doorway one tile wide), return that shift."""
+    best: float | None = None
+    for n in range(1, int(CORNER_NUDGE) + 1):
+        for s in (-n, n):
+            bx, by = (x + delta, y + s) if axis == 0 else (x + s, y + delta)
+            sx, sy = (x, y + s) if axis == 0 else (x + s, y)
+            if not grid.box_hits(sx, sy, w, h) and not grid.box_hits(bx, by, w, h):
+                best = float(s)
+                break
+        if best is not None:
+            break
+    return best
+
+
 def move_box(
     grid: CollisionGrid, x: float, y: float, w: float, h: float, dx: float, dy: float
 ) -> MoveResult:
-    """Move box (x, y, w, h) by (dx, dy) against ``grid`` with axis-separated resolution."""
+    """Move box (x, y, w, h) by (dx, dy) against ``grid`` with axis-separated resolution.
+
+    A move blocked by the corner of a one-tile doorway slides sideways by up to
+    ``CORNER_NUDGE`` px so the player does not need pixel-perfect alignment."""
     nx, hit_x = _sweep_axis(grid, x, y, w, h, dx, 0)
+    if hit_x and not dy:
+        shift = _nudge(grid, x, y, w, h, dx, 0)
+        if shift is not None:
+            y += shift
+            nx, hit_x = _sweep_axis(grid, x, y, w, h, dx, 0)
     ny, hit_y = _sweep_axis(grid, nx, y, w, h, dy, 1)
+    if hit_y and not dx:
+        shift = _nudge(grid, nx, y, w, h, dy, 1)
+        if shift is not None:
+            nx += shift
+            ny, hit_y = _sweep_axis(grid, nx, y, w, h, dy, 1)
     return MoveResult(nx, ny, hit_x, hit_y)
 
 

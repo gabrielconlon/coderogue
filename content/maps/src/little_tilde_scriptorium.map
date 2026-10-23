@@ -2,6 +2,7 @@
 # The vault is the cellar room to the east; Pell shoves Wren in there when the Null comes.
 name: little_tilde_scriptorium
 area: Little Tilde Scriptorium
+intro_dialogue: pell
 chapter: 0
 enter_flag: entered:little_tilde
 tilesets: dungeon
@@ -10,7 +11,7 @@ legend:
   . ground=dungeon:48,48,48,48,49,50,51
   , ground=dungeon:0,0,12,24
   S ground=dungeon:48 wall=dungeon:63
-  I ground=dungeon:48 wall=dungeon:63
+  I ground=dungeon:48 wall=dungeon:67
   s ground=dungeon:48 wall=dungeon:75
   F ground=dungeon:48 wall=dungeon:40 decor=dungeon:29
   t ground=dungeon:48 wall=dungeon:72
@@ -23,7 +24,7 @@ legend:
   D ground=dungeon:48 decor=dungeon:46
 grid:
 ####################
-#SSSSISSS#F##F#,,,,#
+#SSSSSSSI#F##F#,,,,#
 #.............#,,,x#
 #..ttt..P.....V,,,,#
 #...c.........#,,,x#
